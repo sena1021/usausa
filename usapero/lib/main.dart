@@ -161,17 +161,54 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-class NextPage extends StatelessWidget {
+class NextPage extends StatefulWidget {
   const NextPage({super.key});
-  
+
+  @override
+  State<NextPage> createState() => _NextPageState();
+}
+
+class _NextPageState extends State<NextPage> {
+  int _selectedIndex = 0;
+
+  // 選択中のインデックスに対応したウィジェットを返す
+  Widget _buildPageContent() {
+    switch (_selectedIndex) {
+      case 0:
+        return const Center(child: Text('災害情報報告'));
+      case 1:
+        return const Center(child: Text('報告一覧'));
+      default:
+        return const Center(child: Text('不明な画面'));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('次のページ'),
       ),
-      body: const Center(
-        child: Text('ログイン成功後の画面'),
+      body: _buildPageContent(),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.report_outlined),
+            selectedIcon: Icon(Icons.report),
+            label: '災害情報報告',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.explore_outlined),
+            selectedIcon: Icon(Icons.explore),
+            label: '報告一覧',
+          ),
+        ],
       ),
     );
   }
