@@ -219,6 +219,8 @@ class _NextPageState extends State<NextPage> {
   String _manualLatitude = '';
   String _manualLongitude = '';
   String _disasterSubmitResponseMessage = '';
+  final TextEditingController _latitudeController = TextEditingController();
+  final TextEditingController _longitudeController = TextEditingController();
 
   Future<void> _pickImage() async {
     if (kIsWeb) {
@@ -275,6 +277,9 @@ class _NextPageState extends State<NextPage> {
               '緯度: ${position.latitude}, 経度: ${position.longitude} (Web)';
           _manualLatitude = position.latitude.toString();
           _manualLongitude = position.longitude.toString();
+          // コントローラへ反映
+          _latitudeController.text = _manualLatitude;
+          _longitudeController.text = _manualLongitude;
         });
       } else {
         if (Platform.isAndroid || Platform.isIOS) {
@@ -284,6 +289,9 @@ class _NextPageState extends State<NextPage> {
                 '緯度: ${position.latitude}, 経度: ${position.longitude} (モバイル)';
             _manualLatitude = position.latitude.toString();
             _manualLongitude = position.longitude.toString();
+            // コントローラへ反映
+            _latitudeController.text = _manualLatitude;
+            _longitudeController.text = _manualLongitude;
           });
         } else {
           // linux/windows desktop usually does not have GPS chip, so make no sense to get location
@@ -484,6 +492,7 @@ class _NextPageState extends State<NextPage> {
 
           const SizedBox(height: 16),
           TextFormField(
+            controller: _latitudeController,
             decoration: const InputDecoration(
               labelText: '緯度',
               border: OutlineInputBorder(),
@@ -495,6 +504,7 @@ class _NextPageState extends State<NextPage> {
           ),
           const SizedBox(height: 16),
           TextFormField(
+            controller: _longitudeController,
             decoration: const InputDecoration(
               labelText: '経度',
               border: OutlineInputBorder(),
@@ -566,6 +576,7 @@ class _NextPageState extends State<NextPage> {
             _isImportant = false;
             _importance = 5;
             _selectedImages = [];
+            _selectedImageBytes = [];
             _locationMessage = '位置情報は取得されていません';
             _manualLatitude = '';
             _manualLongitude = '';
