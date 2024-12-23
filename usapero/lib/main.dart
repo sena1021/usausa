@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -69,8 +70,6 @@ class _LoginScreenState extends State<LoginScreen> {
     });
     
     try {
-      // ここで実際のAPIエンドポイントを指定
-      // final url = Uri.parse('https://example.com/login');
       // use a local server for testing
       final url = Uri.parse('http://localhost:8000/login');  
       final response = await http.post(
@@ -214,6 +213,7 @@ class _NextPageState extends State<NextPage> {
   bool _isImportant = false;
   int _importance = 5;
   List<File> _selectedImages = [];
+  List<Uint8List> _selectedImageBytes = [];
   // 取得した位置情報を格納するための変数（任意）
   String _locationMessage = '位置情報は取得されていません';
   String _manualLatitude = '';
@@ -222,18 +222,15 @@ class _NextPageState extends State<NextPage> {
 
   Future<void> _pickImage() async {
     if (kIsWeb) {
-      // Web環境なら、FilePickerを使用
       final result = await FilePicker.platform.pickFiles(
         type: FileType.image,
         allowMultiple: true,
       );
       if (result != null && result.files.isNotEmpty) {
         setState(() {
-          // pathがnullの場合はbytesからの変換処理が必要（Web特有の対応）
-          // ここではpathがある前提の例とします。
-          _selectedImages = result.files
-              .where((f) => f.path != null)
-              .map((f) => File(f.path!))
+          _selectedImageBytes = result.files
+              .where((f) => f.bytes != null)
+              .map((f) => f.bytes!)
               .toList();
         });
       }
@@ -407,35 +404,67 @@ class _NextPageState extends State<NextPage> {
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: _selectedImages.isEmpty
-                    ? const Text('画像が選択されていません')
-                    : Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: _selectedImages.asMap().entries.map((entry) {
-                          final index = entry.key;
-                          final imageFile = entry.value;
-                          return Stack(
-                            alignment: Alignment.topRight,
-                            children: [
-                              Image.file(
-                                imageFile,
-                                width: 100,
-                                height: 100,
-                                fit: BoxFit.cover,
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.grey),
-                                onPressed: () {
-                                  setState(() {
-                                    _selectedImages.removeAt(index);
-                                  });
-                                },
-                              ),
-                            ],
-                          );
-                        }).toList(),
-                      ),
+                child: kIsWeb
+                    // ▼ ここでWeb用表示を
+                    ? _selectedImageBytes.isEmpty
+                        ? const Text('画像が選択されていません')
+                        : Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: _selectedImageBytes.asMap().entries.map((entry) {
+                              final index = entry.key;
+                              final imageBytes = entry.value;
+                              return Stack(
+                                alignment: Alignment.topRight,
+                                children: [
+                                  Image.memory(
+                                    imageBytes,
+                                    width: 100,
+                                    height: 100,
+                                    fit: BoxFit.cover,
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.grey),
+                                    onPressed: () {
+                                      setState(() {
+                                        _selectedImageBytes.removeAt(index);
+                                      });
+                                    },
+                                  ),
+                                ],
+                              );
+                            }).toList(),
+                          )
+                    // ▼ ここでモバイル・デスクトップ用表示を
+                    : _selectedImages.isEmpty
+                        ? const Text('画像が選択されていません')
+                        : Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: _selectedImages.asMap().entries.map((entry) {
+                              final index = entry.key;
+                              final imageFile = entry.value;
+                              return Stack(
+                                alignment: Alignment.topRight,
+                                children: [
+                                  Image.file(
+                                    imageFile,
+                                    width: 100,
+                                    height: 100,
+                                    fit: BoxFit.cover,
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.grey),
+                                    onPressed: () {
+                                      setState(() {
+                                        _selectedImages.removeAt(index);
+                                      });
+                                    },
+                                  ),
+                                ],
+                              );
+                            }).toList(),
+                          ),
               ),
             ],
           ),
@@ -484,8 +513,16 @@ class _NextPageState extends State<NextPage> {
               debugPrint('Description: $_description');
               debugPrint('Is Important: $_isImportant');
               debugPrint('Importance: $_importance');
-              debugPrint('Images: $_selectedImages');
+              if (kIsWeb) {
+                // Web: bytesを利用している
+                debugPrint('Selected Bytes: $_selectedImageBytes');
+              } else {
+                // モバイル・デスクトップ: Fileのリスト
+                debugPrint('Selected Files: $_selectedImages');
+              }
+
               debugPrint('Manual Position -> Lat: $_manualLatitude, Lng: $_manualLongitude');
+
               setState(() {
                 _disasterSubmitResponseMessage = '送信しました';
               });
