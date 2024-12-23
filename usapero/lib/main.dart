@@ -518,24 +518,102 @@ class _NextPageState extends State<NextPage> {
           const SizedBox(height: 16),
           // 送信ボタン
           ElevatedButton(
-            onPressed: () {
-              debugPrint('Disaster: $_selectedDisaster');
+            onPressed: () async {
+              if (_selectedDisaster == null) {
+                setState(() {
+                  _disasterSubmitResponseMessage = '災害が未選択です。';
+                });
+                return;
+              }
+              double? lat = double.tryParse(_manualLatitude);
+              double? lng = double.tryParse(_manualLongitude);
+
+              if (lat == null || lng == null) {
+                setState(() {
+                  _disasterSubmitResponseMessage = '緯度・経度を数値で入力してください。';
+                });
+                return;
+              }
+
+              // デバッグ用ログ（あとで削除可能）
+              debugPrint('Disaster: ${_selectedDisaster.toString()}');
               debugPrint('Description: $_description');
               debugPrint('Is Important: $_isImportant');
               debugPrint('Importance: $_importance');
               if (kIsWeb) {
-                // Web: bytesを利用している
                 debugPrint('Selected Bytes: $_selectedImageBytes');
               } else {
-                // モバイル・デスクトップ: Fileのリスト
                 debugPrint('Selected Files: $_selectedImages');
               }
+              debugPrint('Manual Position -> Lat: $lat, Lng: $lng');
 
-              debugPrint('Manual Position -> Lat: $_manualLatitude, Lng: $_manualLongitude');
+              // 送信先のURL (テスト用や本番用で書き換えてください)
+              final url = Uri.parse('http://localhost:8000/disaster_report');
 
-              setState(() {
-                _disasterSubmitResponseMessage = '送信しました';
-              });
+              // サーバーへ送るデータを組み立てる
+              // 画像は簡易的に Base64 化して送る方法の一例をコメントで示します。
+              // マルチパート送信が必要な場合は http.MultipartRequest を使用してください。
+              Map<String, dynamic> requestData = {
+                'disaster': _selectedDisaster.toString(), // enum->String 変換の一例
+                'description': _description,
+                'isImportant': _isImportant,
+                'importance': _importance,
+                'location': {
+                  'latitude': lat,
+                  'longitude': lng,
+                },
+              };
+
+              // 画像を Base64 文字列として送る場合（Web かモバイルで処理を分ける例）
+              if (kIsWeb) {
+                // Web 向け： Uint8List を Base64 エンコード
+                List<String> base64Images = _selectedImageBytes.map((bytes) {
+                  return base64Encode(bytes);
+                }).toList();
+
+                requestData['images'] = base64Images;
+              } else {
+                // モバイル・デスクトップ向け： File -> Uint8List -> Base64
+                List<String> base64Images = [];
+                for (File file in _selectedImages) {
+                  final bytes = await file.readAsBytes();
+                  base64Images.add(base64Encode(bytes));
+                }
+                requestData['images'] = base64Images;
+              }
+
+              // 実際に HTTP POST リクエストを送信
+              try {
+                final response = await http.post(
+                  url,
+                  headers: {'Content-Type': 'application/json'},
+                  body: json.encode(requestData),
+                );
+
+                if (response.statusCode == 200) {
+                  final data = json.decode(response.body);
+                  if (data['success'] == true) {
+                    // 送信成功時の処理
+                    setState(() {
+                      // also show the response message with data['message']
+                      _disasterSubmitResponseMessage = '送信に成功しました。';
+                    });
+                  } else {
+                    setState(() {
+                      _disasterSubmitResponseMessage = '送信に失敗しました。';
+                    });
+                  }
+                } else {
+                  setState(() {
+                    _disasterSubmitResponseMessage = 'サーバーエラーが発生しました。';
+                  });
+                }
+              } catch (e) {
+                // ネットワークエラーやその他例外時の処理
+                setState(() {
+                  _disasterSubmitResponseMessage = 'ネットワークエラーが発生しました。';
+                });
+              }
             },
             child: const Text('送信'),
           ),
