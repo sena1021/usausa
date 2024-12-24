@@ -7,6 +7,8 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 void main() {
   runApp(const MyApp());
@@ -221,6 +223,12 @@ class _NextPageState extends State<NextPage> {
   String _disasterSubmitResponseMessage = '';
   final TextEditingController _latitudeController = TextEditingController();
   final TextEditingController _longitudeController = TextEditingController();
+
+  // for building map
+  final MapController _mapController = MapController();
+  // 初期位置・ズーム
+  final LatLng _initialCenter = LatLng(35.0, 135.0);
+  final double _initialZoom = 5.0;
 
   Future<void> _pickImage() async {
     if (kIsWeb) {
@@ -623,13 +631,61 @@ class _NextPageState extends State<NextPage> {
     );
   }
 
+  Widget _buildMap() {
+    return Column(
+      children: [
+        // 「request data」ボタン
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: ElevatedButton(
+            onPressed: () {
+              // ボタン押下時の処理をここに書く
+              // 例: APIリクエストで報告一覧を取得するといった実装
+              // setState(() {});
+            },
+            child: const Text('データを取得'),
+          ),
+        ),
+        // flutter_map を利用した地図ウィジェット
+        Expanded(
+          child: FlutterMap(
+            // ★ MapController を渡す
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: _initialCenter,
+              initialZoom: _initialZoom,
+            ),
+            children: [
+              TileLayer(
+                urlTemplate:
+                    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                subdomains: const ['a', 'b', 'c'],
+              ),
+              // 必要に応じてマーカーなどを追加
+              // MarkerLayer(
+              //   markers: [
+              //     Marker(
+              //       width: 80.0,
+              //       height: 80.0,
+              //       point: LatLng(35.0, 135.0),
+              //       builder: (ctx) => const Icon(Icons.location_on),
+              //     ),
+              //   ],
+              // ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildPageContent() {
     switch (_selectedIndex) {
       case 0:
         // 災害情報報告用フォームを返す
         return _buildReportForm();
       case 1:
-        return const Center(child: Text('報告一覧'));
+        return _buildMap();
       default:
         return const Center(child: Text('不明な画面'));
     }
@@ -659,6 +715,11 @@ class _NextPageState extends State<NextPage> {
             _manualLatitude = '';
             _manualLongitude = '';
             _disasterSubmitResponseMessage = '';
+          } else if (index == 1) {
+            // ここで地図の初期表示位置を設定
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _mapController.move(_initialCenter, _initialZoom);
+            });
           }
         },
         destinations: const [
@@ -668,8 +729,8 @@ class _NextPageState extends State<NextPage> {
             label: '災害情報報告',
           ),
           NavigationDestination(
-            icon: Icon(Icons.explore_outlined),
-            selectedIcon: Icon(Icons.explore),
+            icon: Icon(Icons.map_outlined),
+            selectedIcon: Icon(Icons.map),
             label: '報告一覧',
           ),
         ],
