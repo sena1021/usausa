@@ -227,7 +227,7 @@ class _NextPageState extends State<NextPage> {
   // for building map
   final MapController _mapController = MapController();
   // 初期位置・ズーム
-  final LatLng _initialCenter = LatLng(35.0, 135.0);
+  final LatLng _initialCenter = const LatLng(35.0, 135.0);
   final double _initialZoom = 5.0;
 
   Future<void> _pickImage() async {
