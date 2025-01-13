@@ -349,6 +349,7 @@ double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
 }
 
 /// Fileを読み込み、Base64エンコード文字列を返す関数
+/// Fileを読み込み、Base64エンコード文字列を返す関数
 Future<String> encodeFileToBase64(File file) async {
   try {
     // ファイルのバイナリデータを読み込む
@@ -358,6 +359,12 @@ Future<String> encodeFileToBase64(File file) async {
   } catch (e) {
     rethrow;
   }
+}
+
+Future<String> encodeAssetToBase64(String assetPath) async {
+  final ByteData data = await rootBundle.load(assetPath);
+  final Uint8List bytes = data.buffer.asUint8List();
+  return base64Encode(bytes);
 }
 
 /// Base64文字列からFileを生成し、指定したパスに書き出す関数
@@ -1192,25 +1199,24 @@ class _NextPageState extends State<NextPage> {
     // ここでデータを取得する処理を書く
   }
 
+  // For sample data, simply load some images from assets and encode them to base64
+  // In production, server will send the base64 string
   Future<void> _loadSampleData() async {
-    // For sample data, simply load some images from assets and encode them to base64
-    // In production, server will send the base64 string
     final assetPaths = [
-      './assets/images_examples/military_vehicle.jpg',
-      './assets/images_examples/nuclear_waste.jpg',
-      './assets/images_examples/teddy_bear.jpg',
-      './assets/images_examples/snow.jpg',
-      './assets/images_examples/snow_husky.jpg',
+      'assets/images_examples/military_vehicle.jpg',
+      'assets/images_examples/nuclear_waste.jpg',
+      'assets/images_examples/teddy_bear.jpg',
+      'assets/images_examples/snow.jpg',
+      'assets/images_examples/snow_husky.jpg',
     ];
 
-    // { filename: base64String } の Map
     final imagesBase64 = <String, String>{};
 
-    // encodeFileToBase64 は Future<String> なので await する
     for (final assetPath in assetPaths) {
-      final file = File(assetPath);
-      final base64Str = await encodeFileToBase64(file);
-      imagesBase64[path.basename(assetPath)] = base64Str;
+      final base64Str = await encodeAssetToBase64(assetPath);
+      // パスの末尾のファイル名だけ取り出したい場合は、split や正規表現で切り出す
+      final fileName = assetPath.split('/').last;
+      imagesBase64[fileName] = base64Str;
     }
 
     setState(() {
