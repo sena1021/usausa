@@ -12,7 +12,7 @@ import 'package:latlong2/latlong.dart';
 import 'dart:math' show asin, cos, sin, sqrt;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:csv/csv.dart';
-import 'package:path/path.dart' as path;
+// import 'package:path/path.dart' as path;
 
 void main() {
   runApp(const MyApp());
