@@ -268,6 +268,9 @@ class Disaster {
   String? notsoaccuratelocation;
   String? description;
   List<String> images = [];
+  int? id; // Optional id field
+  // Optional isSampleData field
+  bool isSampleData = false;
 
   Disaster({
     required this.name,
@@ -276,6 +279,8 @@ class Disaster {
     this.description,
     this.notsoaccuratelocation,
     this.images = const [],
+    this.id, // Optional id in the constructor
+    this.isSampleData = false,
   });
 }
 
@@ -1088,16 +1093,22 @@ class _NextPageState extends State<NextPage> {
                                     children: [
                                       // もし複数枚の画像がある場合はすべて表示
                                       if (disaster.images.isNotEmpty) 
-                                        ...disaster.images.map((imageBase64) {
-                                          return Container(
-                                            margin: const EdgeInsets.only(bottom: 16.0),
-                                            child: Image.memory(
-                                              decodeBase64ToBytes(imageBase64),
-                                              width: double.infinity,
-                                              fit: BoxFit.cover,
-                                            ),
-                                          );
+                                        ...disaster.images.where((imageBase64) => imageBase64.isNotEmpty).map((imageBase64) {
+                                          try {
+                                            return Container(
+                                              margin: const EdgeInsets.only(bottom: 16.0),
+                                              child: Image.memory(
+                                                decodeBase64ToBytes(imageBase64),
+                                                width: double.infinity,
+                                                fit: BoxFit.cover,
+                                              ),
+                                            );
+                                          } catch (e) {
+                                            return SizedBox(); // Placeholder for invalid images
+                                          }
                                         }),
+                                      if (disaster.images.isEmpty)
+                                        Text('No images available'),
                                       
                                       // 災害の説明を表示
                                       const SizedBox(height: 20),
@@ -1146,7 +1157,7 @@ class _NextPageState extends State<NextPage> {
                           iconSize: 24,
                           onPressed: () {
                             // 削除処理
-                            // _deleteDisaster(index);
+                            _deleteDisaster(context, index);
                           },
                         ),
                         IconButton(
@@ -1195,8 +1206,162 @@ class _NextPageState extends State<NextPage> {
     );
   }
 
-  void _loadDisasterData() {
-    // ここでデータを取得する処理を書く
+  Future<void> _deleteDisaster(BuildContext context, int index) async {
+    // 1. 削除対象の災害情報を取得
+    final disaster = _disasterData[index];
+
+    // サンプルデータの場合は削除しない
+    if (disaster.isSampleData) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('サンプルデータは削除できません。'), duration: Duration(seconds: 1),),
+      );
+      return;
+    }
+
+    // 2. サーバー側へDELETEリクエストを送信
+    try {
+      final id = disaster.id; // ここはDisasterクラスの実装に合わせて
+      final url = Uri.parse('http://localhost:8000/disaster/$id');
+      final response = await http.delete(url);
+
+      if (response.statusCode == 200) {
+        // 3. 成功時: ローカルのリストから削除して画面を更新
+        setState(() {
+          _disasterData.removeAt(index);
+          _originalDisasterData = List.from(_disasterData);
+          _updateMarkersFromDisasterData();
+        });
+
+        // SnackBarを表示して成功メッセージを通知
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('削除に成功しました。'), duration: Duration(seconds: 1),),
+          );
+        }
+      } else {
+        // ステータスコードが200以外ならエラーとして扱う例
+        final body = json.decode(response.body);
+        debugPrint("削除失敗: ${response.statusCode} => $body");
+
+        // エラーメッセージをSnackBarで通知
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('削除に失敗しました: ステータスコード ${response.statusCode}'),
+              duration: Duration(seconds: 1),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // ネットワーク障害など
+      debugPrint("エラーが発生しました: $e");
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('エラーが発生しました: $e'),
+          ),
+        );
+      }
+    }
+  }
+
+
+  // Future<void> _archiveDisaster(int index) async {
+  //   // 1. アーカイブ対象の災害情報を取得
+  //   final disaster = _disasterData[index];
+
+  //   // 2. サーバー側へPOSTリクエストを送信 (PUTやPATCHの可能性もあり)
+  //   try {
+  //     // 同様に、一意なIDを利用
+  //     final id = disaster.id;
+  //     final url = Uri.parse('http://localhost:8000/disaster/$id/archive');
+
+  //     final response = await http.post(url);
+
+  //     if (response.statusCode == 200) {
+  //       // 3. 成功時: ローカルのリストから除外するなどの処理を行う
+  //       //   例: 画面上からは削除して「アーカイブ済み」とみなす
+  //       setState(() {
+  //         _disasterData.removeAt(index);
+  //         _originalDisasterData = List.from(_disasterData);
+  //         _updateMarkersFromDisasterData();
+  //       });
+  //     } else {
+  //       // ステータスコードが200以外ならエラーとして扱う例
+  //       final body = json.decode(response.body);
+  //       print("アーカイブ失敗: ${response.statusCode} => $body");
+  //     }
+  //   } catch (e) {
+  //     print("エラーが発生しました: $e");
+  //   }
+  // }
+
+  Future<void> _loadDisasterData() async {
+    try {
+      // FastAPIの /disaster エンドポイントにGETリクエストを送信
+      final response = await http.get(Uri.parse('http://localhost:8000/disaster'));
+
+      if (response.statusCode == 200) {
+        // レスポンスボディをJSONとしてデコード
+        final responseData = jsonDecode(response.body);
+
+        // responseData は { "success": true, "reports": [ ... ] } の形を想定
+        final List<dynamic> reportList = responseData["reports"];
+
+        // レスポンスに含まれる各レポートをFlutter側のDisasterオブジェクトに変換
+        final List<Disaster> loadedData = reportList.map((report) {
+          // "name" に相当するのは "disaster" なのでそこから取得
+          final String name = report["disaster"] ?? "名称不明";
+          // 位置情報
+          final double latitude = report["location"]["latitude"]?.toDouble() ?? 0.0;
+          final double longitude = report["location"]["longitude"]?.toDouble() ?? 0.0;
+          // 画像(Base64文字列)リスト
+          final List<dynamic> imagesDynamic = report["images"] ?? [];
+          // dynamic型をString型に変換
+          final List<String> images = imagesDynamic.map((img) => img?.toString() ?? "").toList();
+          // print(images);
+          // flutter: []
+          // when there is no image
+          // 説明文
+          final String description = report["description"] ?? "";
+          // report_id as id
+          final int id = report["report_id"] ?? "";
+          
+          return Disaster(
+            name: name,
+            latitude: latitude,
+            longitude: longitude,
+            images: images,
+            description: description,
+            id: id,
+          );
+        }).toList();
+
+        // ステートを更新してマーカーなどを再生成
+        setState(() {
+          _disasterData = loadedData;
+          _originalDisasterData = List.from(_disasterData);
+
+          // 例: CSVを読み込んで何か更新する処理がある場合
+          _getnotsoaccurateLocationbyReadingCSV();
+          
+          // 取得したDisasterデータからマーカーやUIを更新
+          _updateMarkersFromDisasterData();
+        });
+      } else {
+        // ステータスコードが200以外のときの処理
+        if (kDebugMode) {
+          debugPrint("データ取得に失敗しました: ${response.statusCode}");
+          debugPrint("レスポンス内容: ${response.body}");
+        }
+      }
+    } catch (e) {
+      // ネットワークエラーやJSONパースエラー時の処理
+      if (kDebugMode) {
+        debugPrint("エラーが発生しました: $e");
+      }
+    }
   }
 
   // For sample data, simply load some images from assets and encode them to base64
@@ -1223,10 +1388,11 @@ class _NextPageState extends State<NextPage> {
       _disasterData = [
         Disaster(
           name: '軍事攻撃',
-          latitude: 35.6895, // 東京
+          latitude: 35.6895,
           longitude: 139.6917,
           images: [imagesBase64['military_vehicle.jpg'] ?? ''],
           description: '東京都で軍事車両が目撃されました。',
+          isSampleData: true,
         ),
         Disaster(
           name: '核汚染',
@@ -1234,6 +1400,7 @@ class _NextPageState extends State<NextPage> {
           longitude: 135.5023,
           images: [imagesBase64['nuclear_waste.jpg'] ?? ''],
           description: '放射性廃棄物が漏れ出しました。',
+          isSampleData: true,
         ),
         Disaster(
           name: '熊襲撃',
@@ -1241,6 +1408,7 @@ class _NextPageState extends State<NextPage> {
           longitude: 143.85868562865505,
           images: [imagesBase64['teddy_bear.jpg'] ?? ''],
           description: '熊が出没しました。',
+          isSampleData: true,
         ),
         Disaster(
           name: '熊襲撃',
@@ -1248,6 +1416,7 @@ class _NextPageState extends State<NextPage> {
           longitude: 143.90273362448957,
           images: [imagesBase64['teddy_bear.jpg'] ?? ''],
           description: '熊が小学校を侵入しました。',
+          isSampleData: true,
         ),
         Disaster(
           name: '大雪',
@@ -1255,6 +1424,7 @@ class _NextPageState extends State<NextPage> {
           longitude: 141.75734214498215,
           images: [imagesBase64['snow.jpg'] ?? ''],
           description: '犬が雪に埋もれました。',
+          isSampleData: true,
         ),
         Disaster(
           name: '大雪',
@@ -1262,6 +1432,7 @@ class _NextPageState extends State<NextPage> {
           longitude: 142.1754771492199,
           images: [imagesBase64['snow_husky.jpg'] ?? ''],
           description: '雪とハスキー。',
+          isSampleData: true,
         ),
       ];
       _originalDisasterData = List.from(_disasterData);
