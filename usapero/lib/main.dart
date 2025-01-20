@@ -1303,8 +1303,9 @@ class _NextPageState extends State<NextPage> {
       final response = await http.get(Uri.parse('http://localhost:8000/disaster'));
 
       if (response.statusCode == 200) {
+        final decodedBody = utf8.decode(response.bodyBytes);
         // レスポンスボディをJSONとしてデコード
-        final responseData = jsonDecode(response.body);
+        final responseData = jsonDecode(decodedBody);
 
         // responseData は { "success": true, "reports": [ ... ] } の形を想定
         final List<dynamic> reportList = responseData["reports"];
