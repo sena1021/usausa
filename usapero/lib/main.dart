@@ -13,6 +13,7 @@ import 'dart:math' show asin, cos, sin, sqrt;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:csv/csv.dart';
 // import 'package:path/path.dart' as path;
+import 'package:flutter_rating_stars/flutter_rating_stars.dart';
 
 void main() {
   runApp(const MyApp());
@@ -253,6 +254,13 @@ enum DisasterType {
   const DisasterType(this.label);
 }
 
+enum DisasterTypeSort  {
+  dateAsc,    // 日時の昇順
+  dateDesc,   // 日時の降順
+  importanceAsc,  // 重要度の昇順
+  importanceDesc, // 重要度の降順
+}
+
 class NextPage extends StatefulWidget {
   const NextPage({super.key});
 
@@ -271,11 +279,17 @@ class Disaster {
   int? id; // Optional id field
   // Optional isSampleData field
   bool isSampleData = false;
+  // Required importance field, a integer from 1 to 10
+  int importance;
+  // Required datetime field
+  DateTime datetime;
 
   Disaster({
     required this.name,
     required this.latitude,
     required this.longitude,
+    required this.importance,
+    required this.datetime,
     this.description,
     this.notsoaccuratelocation,
     this.images = const [],
@@ -398,6 +412,68 @@ Uint8List decodeBase64ToBytes(String base64Str) {
 // =================================================================================================
 // End of Helper functions
 // =================================================================================================
+
+class DisasterDetailsPage extends StatelessWidget {
+  final Disaster disaster;
+
+  const DisasterDetailsPage({super.key, required this.disaster});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('災害詳細'),
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 画像表示
+              if (disaster.images.isNotEmpty)
+                ...disaster.images
+                    .where((imageBase64) => imageBase64.isNotEmpty)
+                    .map((imageBase64) {
+                  try {
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 16.0),
+                      child: Image.memory(
+                        decodeBase64ToBytes(imageBase64),
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    );
+                  } catch (e) {
+                    return const SizedBox(); // 無効な画像のプレースホルダー
+                  }
+                }),
+              if (disaster.images.isEmpty)
+                const Text('No images available'),
+
+              // 災害の説明
+              const SizedBox(height: 20),
+              if (disaster.description != null)
+                Text(
+                  disaster.description!,
+                  style: const TextStyle(fontSize: 16),
+                ),
+
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text('閉じる'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 
 class _NextPageState extends State<NextPage> {
   int _selectedIndex = 0;
@@ -880,6 +956,36 @@ class _NextPageState extends State<NextPage> {
   List<Disaster> _disasterData = [];
   List<Disaster> _originalDisasterData = [];
 
+  DisasterTypeSort _currentDisasterSort = DisasterTypeSort.dateAsc;
+
+  void _sortDisasterData() {
+    setState(() {
+      // どのソートかで場合分けする
+      switch (_currentDisasterSort) {
+        case DisasterTypeSort.dateAsc:
+          _disasterData.sort(
+            (a, b) => a.datetime.compareTo(b.datetime),
+          );
+          break;
+        case DisasterTypeSort.dateDesc:
+          _disasterData.sort(
+            (a, b) => b.datetime.compareTo(a.datetime),
+          );
+          break;
+        case DisasterTypeSort.importanceAsc:
+          _disasterData.sort(
+            (a, b) => a.importance.compareTo(b.importance),
+          );
+          break;
+        case DisasterTypeSort.importanceDesc:
+          _disasterData.sort(
+            (a, b) => b.importance.compareTo(a.importance),
+          );
+          break;
+      }
+    });
+  }
+
   void _updateMarkersFromDisasterData() {
     setState(() {
       _markers = _disasterData.map((disaster) {
@@ -998,183 +1104,232 @@ class _NextPageState extends State<NextPage> {
   Widget _buildMap() {
     return Row(
       children: [
-        // 左側：アイコン2つ（ツールチップ付き）
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4.0),
-          child: Column(
-            children: [
-              Tooltip(
-                message: 'データを取得',
-                child: IconButton(
-                  icon: const Icon(Icons.cloud_download, size: 32),
-                  onPressed: _loadDisasterData,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Tooltip(
-                message: 'サンプルデータ',
-                child: IconButton(
-                  icon: const Icon(Icons.chair, size: 32),
-                  onPressed: _loadSampleData,
-                ),
-              ),
-            ],
-          ),
-        ),
-        // 左側: マップ表示部分
-        Expanded(
-          flex: 1,
-          child: Column(
-            children: [
-              // 「request data」ボタンやサンプルデータ読込ボタン
-              // Padding(padding: const EdgeInsets.all(4.0)),
-              // flutter_map の地図ウィジェット
-              Expanded(
-                child: FlutterMap(
-                  mapController: _mapController,
-                  options: MapOptions(
-                    initialCenter: _initialCenter,
-                    initialZoom: _initialZoom,
-                    onMapEvent: (MapEvent event) {
-                      if (event is MapEventMoveEnd ||
-                          event is MapEventScrollWheelZoom) {
-                        _removeDisasterthatIsNotInCameraView();
-                      }
-                    },
-                  ),
-                  children: [
-                    TileLayer(
-                      urlTemplate:
-                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'dev.fleaflet.flutter_map.example',
-                    ),
-                    MarkerLayer(
-                      markers: _markers,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+        _buildMapLeftPanel(),
+        _buildMapMap(),
+        _buildMapRight(),
+      ],
+    );
+  }
 
-        // 右側: 災害情報の一覧表示部分
-        // if (_disasterData.isNotEmpty)
-        Expanded(
-          flex: 1,
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            itemCount: _disasterData.length,
-            itemBuilder: (context, index) {
-              final disaster = _disasterData[index];
-              return HoverableCard(
-                child: Card(
-                  margin: const EdgeInsets.symmetric(vertical: 4.0),
-                  child: ListTile(
-                    title: Text(
-                      '災害: ${disaster.name}\n'
-                      '緯度: ${disaster.latitude}\n'
-                      '経度: ${disaster.longitude}\n'
-                      '近隣: ${disaster.notsoaccuratelocation}',
-                    ),
-                    // subtitle: const Text('追加情報をここに表示できます'),
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) {
-                            return Scaffold(
-                              appBar: AppBar(
-                                title: const Text('災害詳細'),
-                              ),
-                              body: SingleChildScrollView(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: Column(
-                                    children: [
-                                      // もし複数枚の画像がある場合はすべて表示
-                                      if (disaster.images.isNotEmpty) 
-                                        ...disaster.images.where((imageBase64) => imageBase64.isNotEmpty).map((imageBase64) {
-                                          try {
-                                            return Container(
-                                              margin: const EdgeInsets.only(bottom: 16.0),
-                                              child: Image.memory(
-                                                decodeBase64ToBytes(imageBase64),
-                                                width: double.infinity,
-                                                fit: BoxFit.cover,
-                                              ),
-                                            );
-                                          } catch (e) {
-                                            return SizedBox(); // Placeholder for invalid images
-                                          }
-                                        }),
-                                      if (disaster.images.isEmpty)
-                                        Text('No images available'),
-                                      
-                                      // 災害の説明を表示
-                                      const SizedBox(height: 20),
-                                      if (disaster.description != null)
-                                        Text(
-                                          disaster.description ?? '',
-                                          // スタイルは必要に応じて調整
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                          ),
-                                        ),
-                                      
-                                      const SizedBox(height: 20),
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          Navigator.pop(context);
-                                        },
-                                        child: const Text('閉じる'),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                          fullscreenDialog: true,
-                        ),
-                      );
-                    },
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Show on map button
-                        IconButton(
-                          icon: const Icon(Icons.map),
-                          iconSize: 24,
-                          onPressed: () {
-                            // マップ上で選択した災害の位置に移動
-                            _mapController.move(
-                                LatLng(disaster.latitude, disaster.longitude),
-                                _mapController.camera.zoom);
-                          },
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete),
-                          iconSize: 24,
-                          onPressed: () {
-                            // 削除処理
-                            _deleteDisaster(context, index);
-                          },
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.archive),
-                          iconSize: 24,
-                          onPressed: () {
-                            // アーカイブ処理
-                            // _archiveDisaster(index);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
+  Widget _buildMapLeftPanel() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+      child: Column(
+        children: [
+          Tooltip(
+            message: 'データを取得',
+            child: IconButton(
+              icon: const Icon(Icons.cloud_download, size: 32),
+              onPressed: _loadDisasterData,
+            ),
           ),
+          const SizedBox(height: 8),
+          Tooltip(
+            message: 'サンプルデータ',
+            child: IconButton(
+              icon: const Icon(Icons.chair, size: 32),
+              onPressed: _loadSampleData,
+            ),
+          ),
+          const SizedBox(height: 8),
+          // --- ここからソートボタンを追加 ---
+          Tooltip(
+            message: 'ソートオプション',
+            child: PopupMenuButton<DisasterTypeSort>(
+              icon: const Icon(Icons.sort_outlined, size: 32),
+              tooltip: 'ソートオプション',
+              onSelected: (DisasterTypeSort selectedSort) {
+                setState(() {
+                  _currentDisasterSort = selectedSort;
+                  _sortDisasterData();
+                });
+              },
+              itemBuilder: (BuildContext context) {
+                return <PopupMenuEntry<DisasterTypeSort>>[
+                  const PopupMenuItem<DisasterTypeSort>(
+                    value: DisasterTypeSort.dateAsc,
+                    child: Text('日時（古い順）'),
+                  ),
+                  const PopupMenuItem<DisasterTypeSort>(
+                    value: DisasterTypeSort.dateDesc,
+                    child: Text('日時（新しい順）'),
+                  ),
+                  const PopupMenuItem<DisasterTypeSort>(
+                    value: DisasterTypeSort.importanceAsc,
+                    child: Text('重要度（低い順）'),
+                  ),
+                  const PopupMenuItem<DisasterTypeSort>(
+                    value: DisasterTypeSort.importanceDesc,
+                    child: Text('重要度（高い順）'),
+                  ),
+                ];
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  Widget _buildMapMap() {
+    return Expanded(
+      flex: 1,
+      child: Column(
+        children: [
+          Expanded(
+            child: FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: _initialCenter,
+                initialZoom: _initialZoom,
+                onMapEvent: (MapEvent event) {
+                  if (event is MapEventMoveEnd || event is MapEventScrollWheelZoom) {
+                    _removeDisasterthatIsNotInCameraView();
+                  }
+                },
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'dev.fleaflet.flutter_map.example',
+                ),
+                MarkerLayer(markers: _markers),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMapRight() {
+    return Expanded(
+      flex: 1,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // _buildMapRightDropdown(),
+          _buildMapRightDisasterList(),
+        ],
+      ),
+    );
+  }
+
+  // Widget _buildMapRightDropdown() {
+  //   return Padding(
+  //     padding: const EdgeInsets.symmetric(horizontal: 8.0),
+  //     child: DropdownButton<DisasterTypeSort>(
+  //       value: _currentDisasterSort,
+  //       onChanged: (DisasterTypeSort? newValue) {
+  //         if (newValue != null) {
+  //           setState(() {
+  //             _currentDisasterSort = newValue;
+  //             _sortDisasterData();
+  //           });
+  //         }
+  //       },
+  //       items: const [
+  //         DropdownMenuItem(
+  //           value: DisasterTypeSort.dateAsc,
+  //           child: Text('日時（古い順）'),
+  //         ),
+  //         DropdownMenuItem(
+  //           value: DisasterTypeSort.dateDesc,
+  //           child: Text('日時（新しい順）'),
+  //         ),
+  //         DropdownMenuItem(
+  //           value: DisasterTypeSort.importanceAsc,
+  //           child: Text('重要度（低い順）'),
+  //         ),
+  //         DropdownMenuItem(
+  //           value: DisasterTypeSort.importanceDesc,
+  //           child: Text('重要度（高い順）'),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
+  Widget _buildMapRightDisasterList() {
+    return Expanded(
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        itemCount: _disasterData.length,
+        itemBuilder: (context, index) {
+          final disaster = _disasterData[index];
+          return _buildDisasterCard(disaster, index);
+        },
+      ),
+    );
+  }
+
+  Widget _buildDisasterCard(Disaster disaster, int index) {
+    return HoverableCard(
+      child: Card(
+        margin: const EdgeInsets.symmetric(vertical: 4.0),
+        child: ListTile(
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('災害: ${disaster.name}'),
+              Row(
+                children: [
+                  const Text('重要度: '),
+                  RatingStars(
+                    value: disaster.importance.toDouble(),
+                    starCount: 10,
+                    maxValue: 10,
+                    starSize: 20,
+                    starSpacing: 2,
+                    valueLabelVisibility: false,
+                    starColor: Colors.pink,
+                    starOffColor: const Color(0xffe7e8ea),
+                  ),
+                ],
+              ),
+              Text('近隣: ${disaster.notsoaccuratelocation}'),
+              Text('日時: ${disaster.datetime}'),
+            ],
+          ),
+          trailing: _buildDisasterCardTrailingButtons(disaster, index),
+          onTap: () => _navigateToDisasterDetails(context, disaster),
+        ),
+      ),
+    );
+  }
+
+  void _navigateToDisasterDetails(BuildContext context, Disaster disaster) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => DisasterDetailsPage(disaster: disaster),
+        fullscreenDialog: true,
+      ),
+    );
+  }
+
+  Widget _buildDisasterCardTrailingButtons(Disaster disaster, int index) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.map),
+          onPressed: () {
+            _mapController.move(
+              LatLng(disaster.latitude, disaster.longitude),
+              _mapController.camera.zoom,
+            );
+          },
+        ),
+        IconButton(
+          icon: const Icon(Icons.delete),
+          onPressed: () => _deleteDisaster(context, index),
+        ),
+        IconButton(
+          icon: const Icon(Icons.archive),
+          onPressed: () {
+            // アーカイブ処理
+          },
         ),
       ],
     );
@@ -1312,23 +1467,27 @@ class _NextPageState extends State<NextPage> {
 
         // レスポンスに含まれる各レポートをFlutter側のDisasterオブジェクトに変換
         final List<Disaster> loadedData = reportList.map((report) {
-          // "name" に相当するのは "disaster" なのでそこから取得
           final String name = report["disaster"] ?? "名称不明";
-          // 位置情報
           final double latitude = report["location"]["latitude"]?.toDouble() ?? 0.0;
           final double longitude = report["location"]["longitude"]?.toDouble() ?? 0.0;
-          // 画像(Base64文字列)リスト
           final List<dynamic> imagesDynamic = report["images"] ?? [];
-          // dynamic型をString型に変換
           final List<String> images = imagesDynamic.map((img) => img?.toString() ?? "").toList();
-          // print(images);
-          // flutter: []
-          // when there is no image
-          // 説明文
           final String description = report["description"] ?? "";
-          // report_id as id
           final int id = report["report_id"] ?? "";
-          
+          final int importance = report["importance"] ?? 0;
+
+          DateTime datetime;
+          try {
+            datetime = report["datetime"] != null
+                ? DateTime.parse(report["datetime"])
+                : DateTime.now();
+          } catch (e) {
+            datetime = DateTime.now();
+            if (kDebugMode) {
+              debugPrint("日付形式が不正です: ${report["datetime"]}");
+            }
+          }
+
           return Disaster(
             name: name,
             latitude: latitude,
@@ -1336,6 +1495,8 @@ class _NextPageState extends State<NextPage> {
             images: images,
             description: description,
             id: id,
+            importance: importance,
+            datetime: datetime,
           );
         }).toList();
 
@@ -1343,22 +1504,18 @@ class _NextPageState extends State<NextPage> {
         setState(() {
           _disasterData = loadedData;
           _originalDisasterData = List.from(_disasterData);
-
-          // 例: CSVを読み込んで何か更新する処理がある場合
           _getnotsoaccurateLocationbyReadingCSV();
-          
-          // 取得したDisasterデータからマーカーやUIを更新
           _updateMarkersFromDisasterData();
+          _sortDisasterData();
         });
+
       } else {
-        // ステータスコードが200以外のときの処理
         if (kDebugMode) {
           debugPrint("データ取得に失敗しました: ${response.statusCode}");
           debugPrint("レスポンス内容: ${response.body}");
         }
       }
     } catch (e) {
-      // ネットワークエラーやJSONパースエラー時の処理
       if (kDebugMode) {
         debugPrint("エラーが発生しました: $e");
       }
@@ -1394,6 +1551,8 @@ class _NextPageState extends State<NextPage> {
           images: [imagesBase64['military_vehicle.jpg'] ?? ''],
           description: '東京都で軍事車両が目撃されました。',
           isSampleData: true,
+          importance: 9,
+          datetime: DateTime.utc(2025, 1, 1, 12, 0),
         ),
         Disaster(
           name: '核汚染',
@@ -1402,6 +1561,8 @@ class _NextPageState extends State<NextPage> {
           images: [imagesBase64['nuclear_waste.jpg'] ?? ''],
           description: '放射性廃棄物が漏れ出しました。',
           isSampleData: true,
+          importance: 10,
+          datetime: DateTime.utc(2025, 1, 2, 7, 13),
         ),
         Disaster(
           name: '熊襲撃',
@@ -1410,6 +1571,8 @@ class _NextPageState extends State<NextPage> {
           images: [imagesBase64['teddy_bear.jpg'] ?? ''],
           description: '熊が出没しました。',
           isSampleData: true,
+          importance: 2,
+          datetime: DateTime.utc(2025, 1, 3, 8, 0),
         ),
         Disaster(
           name: '熊襲撃',
@@ -1418,6 +1581,8 @@ class _NextPageState extends State<NextPage> {
           images: [imagesBase64['teddy_bear.jpg'] ?? ''],
           description: '熊が小学校を侵入しました。',
           isSampleData: true,
+          importance: 2,
+          datetime: DateTime.utc(2025, 1, 4, 22, 0),
         ),
         Disaster(
           name: '大雪',
@@ -1426,6 +1591,8 @@ class _NextPageState extends State<NextPage> {
           images: [imagesBase64['snow.jpg'] ?? ''],
           description: '犬が雪に埋もれました。',
           isSampleData: true,
+          importance: 1,
+          datetime: DateTime.utc(2025, 1, 5, 10, 0),
         ),
         Disaster(
           name: '大雪',
@@ -1434,11 +1601,14 @@ class _NextPageState extends State<NextPage> {
           images: [imagesBase64['snow_husky.jpg'] ?? ''],
           description: '雪とハスキー。',
           isSampleData: true,
+          importance: 1,
+          datetime: DateTime.utc(2025, 1, 1, 13, 0),
         ),
       ];
       _originalDisasterData = List.from(_disasterData);
       _getnotsoaccurateLocationbyReadingCSV();
       _updateMarkersFromDisasterData();
+      _sortDisasterData();
     });
   }
 
