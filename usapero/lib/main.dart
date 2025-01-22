@@ -248,7 +248,8 @@ enum DisasterType {
   bearassault('熊襲撃'),
   militaryattack('軍事攻撃'),
   nuclearcontamination('核汚染'),
-  other('その他');
+  other('その他'),
+  all('すべて');
 
   final String label;
   const DisasterType(this.label);
@@ -272,6 +273,7 @@ class Disaster {
   String name;
   double latitude;
   double longitude;
+  DisasterType type;
   // ざっくりした所在地を表すフィールド
   String? notsoaccuratelocation;
   String? description;
@@ -288,6 +290,7 @@ class Disaster {
     required this.name,
     required this.latitude,
     required this.longitude,
+    required this.type,
     required this.importance,
     required this.datetime,
     this.description,
@@ -296,6 +299,31 @@ class Disaster {
     this.id, // Optional id in the constructor
     this.isSampleData = false,
   });
+}
+
+// 「災害名」→「DisasterType」の対応表
+final Map<String, DisasterType> _disasterNameToTypeMap = {
+  '火災': DisasterType.fire,
+  '山火事': DisasterType.forestFire,
+  '地震': DisasterType.earthquake,
+  '地盤沈下': DisasterType.sinkhole,
+  '土砂災害': DisasterType.earthstrike,
+  '津波': DisasterType.tsunami,
+  '洪水': DisasterType.flood,
+  '台風': DisasterType.typhoon,
+  '竜巻': DisasterType.tornado,
+  '豪雨': DisasterType.heavyRain,
+  '大雪': DisasterType.heavySnow,
+  '火山噴火': DisasterType.volcanicEruption,
+  '人為事故': DisasterType.humanerror,
+  '熊襲撃': DisasterType.bearassault,
+  '軍事攻撃': DisasterType.militaryattack,
+  '核汚染': DisasterType.nuclearcontamination,
+};
+
+DisasterType getDisasterTypeFromName(String name) {
+  // マッピングテーブルに無い場合は「その他」を返す
+  return _disasterNameToTypeMap[name] ?? DisasterType.other;
 }
 
 class CityData {
@@ -621,7 +649,9 @@ class _NextPageState extends State<NextPage> {
           DropdownMenu<DisasterType>(
             width: double.infinity,
             label: const Text('どんな災害ですか？'),
-            dropdownMenuEntries: disasterEntries,
+            dropdownMenuEntries: disasterEntries
+                .where((entry) => entry.value != DisasterType.all)
+                .toList(),
             onSelected: (DisasterType? disaster) {
               setState(() {
                 _selectedDisaster = disaster;
@@ -954,13 +984,26 @@ class _NextPageState extends State<NextPage> {
   final double _initialZoom = 5.2;
   List<Marker> _markers = [];
   List<Disaster> _disasterData = [];
+  // _originalDisasterData is used to store the original data, _removeDisasterthatIsNotInCameraView function
+  // filters using this data to update _disasterData
   List<Disaster> _originalDisasterData = [];
 
   DisasterTypeSort _currentDisasterSort = DisasterTypeSort.dateAsc;
+  DisasterType? _currentDisasterFilter = DisasterType.all; 
+
+  void _filterAndSortDisasterData() {
+    if (_currentDisasterFilter == DisasterType.all) {
+      _disasterData = List.from(_originalDisasterData);
+    } else {
+      _disasterData = _originalDisasterData
+          .where((d) => d.type == _currentDisasterFilter)
+          .toList();
+    }
+    _sortDisasterData();
+  }
 
   void _sortDisasterData() {
     setState(() {
-      // どのソートかで場合分けする
       switch (_currentDisasterSort) {
         case DisasterTypeSort.dateAsc:
           _disasterData.sort(
@@ -1095,6 +1138,7 @@ class _NextPageState extends State<NextPage> {
     setState(() {
       // assigin original disaster data to disaster data
       _disasterData = List.from(_originalDisasterData);
+      _filterAndSortDisasterData();
       _disasterData.removeWhere((disaster) {
         return !bounds.contains(LatLng(disaster.latitude, disaster.longitude));
       });
@@ -1112,6 +1156,12 @@ class _NextPageState extends State<NextPage> {
   }
 
   Widget _buildMapLeftPanel() {
+    // load data and load sample data does the following:
+    // _disasterData = loadedData from defined samples or from the server
+    // _originalDisasterData = List.from(_disasterData);
+    // _getnotsoaccurateLocationbyReadingCSV();
+    // _updateMarkersFromDisasterData();
+    // _sortDisasterData();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4.0),
       child: Column(
@@ -1132,39 +1182,60 @@ class _NextPageState extends State<NextPage> {
             ),
           ),
           const SizedBox(height: 8),
-          // --- ここからソートボタンを追加 ---
-          Tooltip(
-            message: 'ソートオプション',
-            child: PopupMenuButton<DisasterTypeSort>(
-              icon: const Icon(Icons.sort_outlined, size: 32),
-              tooltip: 'ソートオプション',
-              onSelected: (DisasterTypeSort selectedSort) {
-                setState(() {
-                  _currentDisasterSort = selectedSort;
-                  _sortDisasterData();
-                });
-              },
-              itemBuilder: (BuildContext context) {
-                return <PopupMenuEntry<DisasterTypeSort>>[
-                  const PopupMenuItem<DisasterTypeSort>(
-                    value: DisasterTypeSort.dateAsc,
-                    child: Text('日時（古い順）'),
-                  ),
-                  const PopupMenuItem<DisasterTypeSort>(
-                    value: DisasterTypeSort.dateDesc,
-                    child: Text('日時（新しい順）'),
-                  ),
-                  const PopupMenuItem<DisasterTypeSort>(
-                    value: DisasterTypeSort.importanceAsc,
-                    child: Text('重要度（低い順）'),
-                  ),
-                  const PopupMenuItem<DisasterTypeSort>(
-                    value: DisasterTypeSort.importanceDesc,
-                    child: Text('重要度（高い順）'),
-                  ),
-                ];
-              },
-            ),
+          // sort option
+          PopupMenuButton<DisasterTypeSort>(
+            icon: const Icon(Icons.sort_outlined, size: 32),
+            tooltip: 'ソートオプション',
+            onSelected: (DisasterTypeSort selectedSort) {
+              setState(() {
+                _currentDisasterSort = selectedSort;
+                _sortDisasterData();
+              });
+            },
+            itemBuilder: (BuildContext context) {
+              return <PopupMenuEntry<DisasterTypeSort>>[
+                const PopupMenuItem<DisasterTypeSort>(
+                  value: DisasterTypeSort.dateAsc,
+                  child: Text('日時（古い順）'),
+                ),
+                const PopupMenuItem<DisasterTypeSort>(
+                  value: DisasterTypeSort.dateDesc,
+                  child: Text('日時（新しい順）'),
+                ),
+                const PopupMenuItem<DisasterTypeSort>(
+                  value: DisasterTypeSort.importanceAsc,
+                  child: Text('重要度（低い順）'),
+                ),
+                const PopupMenuItem<DisasterTypeSort>(
+                  value: DisasterTypeSort.importanceDesc,
+                  child: Text('重要度（高い順）'),
+                ),
+              ];
+            },
+          ),
+          const SizedBox(height: 8),
+          // quick filter
+          PopupMenuButton<DisasterType?>(
+            icon: const Icon(Icons.filter_1_outlined, size: 32),
+            tooltip: 'クイックフィルター',
+            onSelected: (DisasterType? selectedType) {
+              setState(() {
+                _currentDisasterFilter = selectedType;
+                _filterAndSortDisasterData();
+                _updateMarkersFromDisasterData();
+              });
+            },
+            itemBuilder: (BuildContext context) {
+              return <PopupMenuEntry<DisasterType?>>[
+                // DisasterType の値を列挙してメニューを作成
+                ...DisasterType.values.map((type) {
+                  return PopupMenuItem<DisasterType?>(
+                    value: type,
+                    child: Text(type.label),
+                  );
+                }),
+              ];
+            },
           ),
         ],
       ),
@@ -1490,6 +1561,7 @@ class _NextPageState extends State<NextPage> {
 
           return Disaster(
             name: name,
+            type: getDisasterTypeFromName(name),
             latitude: latitude,
             longitude: longitude,
             images: images,
@@ -1505,6 +1577,7 @@ class _NextPageState extends State<NextPage> {
           _disasterData = loadedData;
           _originalDisasterData = List.from(_disasterData);
           _getnotsoaccurateLocationbyReadingCSV();
+          _currentDisasterFilter = DisasterType.all; 
           _updateMarkersFromDisasterData();
           _sortDisasterData();
         });
@@ -1546,6 +1619,7 @@ class _NextPageState extends State<NextPage> {
       _disasterData = [
         Disaster(
           name: '軍事攻撃',
+          type: DisasterType.militaryattack,
           latitude: 35.6895,
           longitude: 139.6917,
           images: [imagesBase64['military_vehicle.jpg'] ?? ''],
@@ -1556,6 +1630,7 @@ class _NextPageState extends State<NextPage> {
         ),
         Disaster(
           name: '核汚染',
+          type: DisasterType.nuclearcontamination,
           latitude: 34.6937,
           longitude: 135.5023,
           images: [imagesBase64['nuclear_waste.jpg'] ?? ''],
@@ -1566,6 +1641,7 @@ class _NextPageState extends State<NextPage> {
         ),
         Disaster(
           name: '熊襲撃',
+          type: DisasterType.bearassault,
           latitude: 43.82013008282363,
           longitude: 143.85868562865505,
           images: [imagesBase64['teddy_bear.jpg'] ?? ''],
@@ -1576,6 +1652,7 @@ class _NextPageState extends State<NextPage> {
         ),
         Disaster(
           name: '熊襲撃',
+          type: DisasterType.bearassault,
           latitude: 43.81444321853834,
           longitude: 143.90273362448957,
           images: [imagesBase64['teddy_bear.jpg'] ?? ''],
@@ -1586,6 +1663,7 @@ class _NextPageState extends State<NextPage> {
         ),
         Disaster(
           name: '大雪',
+          type: DisasterType.heavySnow,
           latitude: 43.19764537767935,
           longitude: 141.75734214498215,
           images: [imagesBase64['snow.jpg'] ?? ''],
@@ -1596,6 +1674,7 @@ class _NextPageState extends State<NextPage> {
         ),
         Disaster(
           name: '大雪',
+          type: DisasterType.heavySnow,
           latitude: 43.529597509514225,
           longitude: 142.1754771492199,
           images: [imagesBase64['snow_husky.jpg'] ?? ''],
@@ -1607,6 +1686,7 @@ class _NextPageState extends State<NextPage> {
       ];
       _originalDisasterData = List.from(_disasterData);
       _getnotsoaccurateLocationbyReadingCSV();
+      _currentDisasterFilter = DisasterType.all; 
       _updateMarkersFromDisasterData();
       _sortDisasterData();
     });
@@ -1658,6 +1738,7 @@ class _NextPageState extends State<NextPage> {
             _markers = [];
             _disasterData = [];
             _originalDisasterData = [];
+            _currentDisasterFilter = DisasterType.all; 
           }
         },
         destinations: const [
