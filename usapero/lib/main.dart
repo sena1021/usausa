@@ -1619,7 +1619,7 @@ class _NextPageState extends State<NextPage> {
       _disasterData = [
         Disaster(
           name: '軍事攻撃',
-          type: DisasterType.militaryattack,
+          type: getDisasterTypeFromName('軍事攻撃'),
           latitude: 35.6895,
           longitude: 139.6917,
           images: [imagesBase64['military_vehicle.jpg'] ?? ''],
@@ -1630,7 +1630,7 @@ class _NextPageState extends State<NextPage> {
         ),
         Disaster(
           name: '核汚染',
-          type: DisasterType.nuclearcontamination,
+          type: getDisasterTypeFromName('核汚染'),
           latitude: 34.6937,
           longitude: 135.5023,
           images: [imagesBase64['nuclear_waste.jpg'] ?? ''],
@@ -1641,7 +1641,7 @@ class _NextPageState extends State<NextPage> {
         ),
         Disaster(
           name: '熊襲撃',
-          type: DisasterType.bearassault,
+          type: getDisasterTypeFromName('熊襲撃'),
           latitude: 43.82013008282363,
           longitude: 143.85868562865505,
           images: [imagesBase64['teddy_bear.jpg'] ?? ''],
@@ -1652,7 +1652,7 @@ class _NextPageState extends State<NextPage> {
         ),
         Disaster(
           name: '熊襲撃',
-          type: DisasterType.bearassault,
+          type: getDisasterTypeFromName('熊襲撃'),
           latitude: 43.81444321853834,
           longitude: 143.90273362448957,
           images: [imagesBase64['teddy_bear.jpg'] ?? ''],
@@ -1663,7 +1663,7 @@ class _NextPageState extends State<NextPage> {
         ),
         Disaster(
           name: '大雪',
-          type: DisasterType.heavySnow,
+          type: getDisasterTypeFromName('大雪'),
           latitude: 43.19764537767935,
           longitude: 141.75734214498215,
           images: [imagesBase64['snow.jpg'] ?? ''],
@@ -1674,7 +1674,7 @@ class _NextPageState extends State<NextPage> {
         ),
         Disaster(
           name: '大雪',
-          type: DisasterType.heavySnow,
+          type: getDisasterTypeFromName('大雪'),
           latitude: 43.529597509514225,
           longitude: 142.1754771492199,
           images: [imagesBase64['snow_husky.jpg'] ?? ''],
