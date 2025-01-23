@@ -510,13 +510,6 @@ class DisasterDetailsPage extends StatelessWidget {
                         ),
                         SizedBox(height: screenHeight * 0.015),
 
-                        // 災害種類
-                        Text(
-                          '災害種類: ${disaster.type.toString().split('.').last}',
-                          style: TextStyle(fontSize: screenWidth * 0.022),
-                        ),
-                        SizedBox(height: screenHeight * 0.015),
-
                         // 重要度
                         Row(
                           children: [
