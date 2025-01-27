@@ -532,25 +532,25 @@ class DisasterDetailsPage extends StatelessWidget {
                         ),
                         SizedBox(height: screenHeight * 0.015),
 
-                        // 住所（近隣）
+                        // 近隣
                         Text(
                           '近隣: ${disaster.notsoaccuratelocation ?? '不明'}',
                           style: TextStyle(fontSize: screenWidth * 0.022),
                         ),
+                        SizedBox(height: screenHeight * 0.015),
+
+                        // 詳細情報
+                        if (disaster.description != null)
+                          Text(
+                            // disaster.description!,
+                            '詳細情報: ${disaster.description}',
+                            style: TextStyle(fontSize: screenWidth * 0.022),
+                          ),
                       ],
                     ),
                   ),
                 ],
               ),
-
-              SizedBox(height: screenHeight * 0.02), // 余白を少し広めに調整
-
-              // 災害の説明
-              if (disaster.description != null)
-                Text(
-                  disaster.description!,
-                  style: TextStyle(fontSize: screenWidth * 0.022), // フォントサイズを調整
-                ),
 
               SizedBox(height: screenHeight * 0.02), // 余白を少し広めに調整
 
@@ -1750,7 +1750,7 @@ class _NextPageState extends State<NextPage> {
           latitude: 43.19764537767935,
           longitude: 141.75734214498215,
           images: [imagesBase64['snow.jpg'] ?? ''],
-          description: '犬が雪に埋もれました。',
+          description: '冬の寒さが厳しく、雪が静かに降り積もる山奥の村。小さな犬の「まる」は、いつものように村のはずれの林を走り回って遊んでいました。しかし、その日は雪がいつもより深く、まるは夢中で跳ね回るうちに深い雪の中に足を取られ、身動きが取れなくなってしまいました。',
           isSampleData: true,
           importance: 1,
           datetime: DateTime.utc(2025, 1, 5, 10, 0),
