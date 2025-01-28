@@ -29,6 +29,34 @@ class _DisasterDetailsPageState extends State<DisasterDetailsPage> {
     });
   }
 
+  /// 状態に応じたテキストを取得する関数
+  String _getStatusText(int status) {
+    switch (status) {
+      case 0:
+        return '未対応';
+      case 1:
+        return '対応中';
+      case 2:
+        return '対応済み';
+      default:
+        return '不明';
+    }
+  }
+
+  /// 状態に応じた色を取得する関数
+  Color _getStatusColor(int status) {
+    switch (status) {
+      case 0:
+        return Colors.red;
+      case 1:
+        return Colors.yellow;
+      case 2:
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -154,6 +182,17 @@ class _DisasterDetailsPageState extends State<DisasterDetailsPage> {
         Text(
           '近隣: ${_disaster.notsoaccuratelocation ?? '不明'}',
           style: TextStyle(fontSize: screenWidth * 0.022),
+        ),
+        SizedBox(height: screenHeight * 0.015),
+
+        /// status: 0: 未対応, 1: 対応中, 2: 対応済み, other: 不明
+        /// 未対応: 赤色, 対応中: 黄色, 対応済み: 緑色
+        Text(
+          '状態: ${_getStatusText(_disaster.status)}',
+          style: TextStyle(
+            fontSize: screenWidth * 0.022,
+            color: _getStatusColor(_disaster.status),
+          ),
         ),
         SizedBox(height: screenHeight * 0.015),
 

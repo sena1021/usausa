@@ -286,6 +286,8 @@ class Disaster {
   int importance;
   // Required datetime field
   DateTime datetime;
+  // Required int status field
+  int status;
 
   Disaster({
     required this.name,
@@ -294,6 +296,7 @@ class Disaster {
     required this.type,
     required this.importance,
     required this.datetime,
+    required this.status,
     this.description,
     this.notsoaccuratelocation,
     this.images = const [],
@@ -1505,6 +1508,7 @@ class _NextPageState extends State<NextPage> {
               debugPrint("日付形式が不正です: ${report["datetime"]}");
             }
           }
+          final int status = report["status"] ?? 0;
 
           return Disaster(
             name: name,
@@ -1516,6 +1520,7 @@ class _NextPageState extends State<NextPage> {
             id: id,
             importance: importance,
             datetime: datetime,
+            status: status,
           );
         }).toList();
 
@@ -1574,6 +1579,7 @@ class _NextPageState extends State<NextPage> {
           isSampleData: true,
           importance: 9,
           datetime: DateTime.utc(2025, 1, 1, 12, 0),
+          status: 2,
         ),
         Disaster(
           name: '核汚染',
@@ -1585,6 +1591,7 @@ class _NextPageState extends State<NextPage> {
           isSampleData: true,
           importance: 10,
           datetime: DateTime.utc(2025, 1, 2, 7, 13),
+          status: 0,
         ),
         Disaster(
           name: '熊襲撃',
@@ -1596,6 +1603,7 @@ class _NextPageState extends State<NextPage> {
           isSampleData: true,
           importance: 2,
           datetime: DateTime.utc(2025, 1, 3, 8, 0),
+          status: 1,
         ),
         Disaster(
           name: '熊襲撃',
@@ -1607,6 +1615,7 @@ class _NextPageState extends State<NextPage> {
           isSampleData: true,
           importance: 2,
           datetime: DateTime.utc(2025, 1, 4, 22, 0),
+          status: 1,
         ),
         Disaster(
           name: '大雪',
@@ -1618,6 +1627,7 @@ class _NextPageState extends State<NextPage> {
           isSampleData: true,
           importance: 1,
           datetime: DateTime.utc(2025, 1, 5, 10, 0),
+          status: 1,
         ),
         Disaster(
           name: '大雪',
@@ -1629,6 +1639,7 @@ class _NextPageState extends State<NextPage> {
           isSampleData: true,
           importance: 1,
           datetime: DateTime.utc(2025, 1, 1, 13, 0),
+          status: 3,
         ),
       ];
       _originalDisasterData = List.from(_disasterData);
