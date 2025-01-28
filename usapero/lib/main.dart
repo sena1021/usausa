@@ -924,7 +924,7 @@ class _NextPageState extends State<NextPage> {
   final LatLng _initialCenter = const LatLng(38.0, 140.0);
   final double _initialZoom = 5.2;
   List<Marker> _markers = [];
-  List<Disaster> _disasterData = [];
+  List<Disaster> _disasterData = []; // fetched from the server or read from sample data
   // _originalDisasterData is used to store the original data, _removeDisasterthatIsNotInCameraView function
   // filters using this data to update _disasterData
   List<Disaster> _originalDisasterData = [];
@@ -968,6 +968,32 @@ class _NextPageState extends State<NextPage> {
           break;
       }
     });
+  }
+
+  String _getDisasterStatusText(int status) {
+    switch (status) {
+      case 0:
+        return '未対応';
+      case 1:
+        return '対応中';
+      case 2:
+        return '対応済み';
+      default:
+        return '不明';
+    }
+  }
+
+  Color _getDisasterStatusColor(int status) {
+    switch (status) {
+      case 0:
+        return Colors.red;
+      case 1:
+        return Colors.yellow;
+      case 2:
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
   }
 
   void _updateMarkersFromDisasterData() {
@@ -1284,7 +1310,23 @@ class _NextPageState extends State<NextPage> {
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('災害: ${disaster.name}'),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 1.0),
+                    decoration: BoxDecoration(
+                      color: _getDisasterStatusColor(disaster.status),
+                      borderRadius: BorderRadius.circular(2.0),
+                    ),
+                    child: Text(
+                      _getDisasterStatusText(disaster.status),
+                      style: const TextStyle(color: Colors.white, fontSize: 12.0),
+                    ),
+                  ),
+                  const SizedBox(width: 8.0),
+                  Text(disaster.name),
+                ],
+              ),
               Row(
                 children: [
                   const Text('重要度: '),
@@ -1304,7 +1346,12 @@ class _NextPageState extends State<NextPage> {
               Text('日時: ${disaster.datetime}'),
             ],
           ),
-          trailing: _buildDisasterCardTrailingButtons(disaster, index),
+          trailing: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildDisasterCardTrailingButtons(disaster, index),
+            ],
+          ),
           onTap: () => _navigateToDisasterDetails(context, disaster),
         ),
       ),
@@ -1341,6 +1388,16 @@ class _NextPageState extends State<NextPage> {
           icon: const Icon(Icons.archive),
           onPressed: () {
             // アーカイブ処理
+          },
+        ),
+        // button swap status
+        IconButton(
+          icon: const Icon(Icons.swap_horizontal_circle),
+          onPressed: () {
+            // change disaster.status to the next status 0 -> 1 -> 2 -> 0
+            // sand swap_status request to the server
+            // currently send to localhost:8000/disaster/$id/swap_status
+            _swapDisasterStatus(context, index);
           },
         ),
       ],
@@ -1438,6 +1495,91 @@ class _NextPageState extends State<NextPage> {
       }
     }
   }
+
+  // ステータスをローカルでサイクル更新する関数
+  void _cycleLocalStatus(Disaster disaster) {
+    // 0 -> 1 -> 2 -> 0 に切り替え
+    final nextStatus = (disaster.status + 1) % 3;
+    disaster.status = nextStatus;
+  }
+
+  /// ステータスを切り替える
+  Future<void> _swapDisasterStatus(BuildContext context, int index) async {
+    final disaster = _disasterData[index];
+
+    // サンプルデータの場合はローカルだけ切り替え、サーバーにはリクエスト送信しない
+    if (disaster.isSampleData) {
+      _cycleLocalStatus(disaster);
+      setState(() {
+        // 画面をリフレッシュ
+        _disasterData[index] = disaster;
+        _originalDisasterData = List.from(_disasterData);
+        _updateMarkersFromDisasterData();
+      });
+
+      // メッセージを表示
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('サンプルデータのステータスを切り替えました。'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
+      return;
+    }
+
+    // サンプルデータでない場合はサーバーにリクエストを送信してからステータス変更
+    try {
+      final id = disaster.id; // Disasterクラスのidを利用
+      final url = Uri.parse('http://localhost:8000/disaster/$id/swap_status');
+
+      // ここでは PUT や POST などでステータス切り替え用のリクエストを送る想定
+      // 実際のAPI設計に合わせてメソッドやボディなどを変更してください
+      final response = await http.post(url);
+
+      if (response.statusCode == 200) {
+        // サーバー側での更新が成功したら、ローカルデータも切り替え
+        _cycleLocalStatus(disaster);
+        setState(() {
+          _disasterData[index] = disaster;
+          _originalDisasterData = List.from(_disasterData);
+          _updateMarkersFromDisasterData();
+        });
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('ステータスを切り替えました。'),
+              duration: Duration(seconds: 1),
+            ),
+          );
+        }
+      } else {
+        // ステータスコードが200でない場合はエラーとして扱う
+        final body = json.decode(response.body);
+        debugPrint("ステータス切り替え失敗: ${response.statusCode} => $body");
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('ステータス切り替えに失敗しました: ${response.statusCode}'),
+              duration: const Duration(seconds: 1),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint("エラーが発生しました: $e");
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('エラーが発生しました: $e'),
+          ),
+        );
+      }
+    }
+  }
+
 
   // Future<void> _archiveDisaster(int index) async {
   //   // 1. アーカイブ対象の災害情報を取得
