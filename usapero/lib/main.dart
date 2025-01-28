@@ -14,6 +14,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:csv/csv.dart';
 // import 'package:path/path.dart' as path;
 import 'package:flutter_rating_stars/flutter_rating_stars.dart';
+import 'disaster_details_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -70,10 +71,10 @@ class HoverableCardState extends State<HoverableCard> {
         decoration: BoxDecoration(
           boxShadow: _isHovering
               ? [
-                  BoxShadow(
-                    color: const Color.fromARGB(255, 244, 230, 237),
+                  const BoxShadow(
+                    color: Color.fromARGB(255, 244, 230, 237),
                     blurRadius: 6,
-                    offset: const Offset(0, 3),
+                    offset: Offset(0, 3),
                   )
                 ]
               : [],
@@ -438,144 +439,6 @@ Uint8List decodeBase64ToBytes(String base64Str) {
 // End of Helper functions
 // =================================================================================================
 
-class DisasterDetailsPage extends StatelessWidget {
-  final Disaster disaster;
-
-  const DisasterDetailsPage({super.key, required this.disaster});
-
-  @override
-  Widget build(BuildContext context) {
-    // 画面サイズを取得
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-
-    // 画像サイズを調整（文字のサイズに合わせるために、例えば高さを150に設定）
-    double imageHeight = screenHeight * 0.6; // 画面の高さの20%を画像の高さとして設定
-    double imageWidth = imageHeight; // 幅も高さに合わせて同じにする
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('災害詳細'),
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.all(screenWidth * 0.02), // 画面の幅の2%を余白として設定
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 画像と災害情報を左右に並べる
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 画像表示
-                  if (disaster.images.isNotEmpty)
-                    Container(
-                      margin: EdgeInsets.only(
-                          right: screenWidth * 0.02), // 画像と情報の間隔を広く
-                      width: imageWidth, // 画像の幅を設定
-                      height: imageHeight, // 画像の高さを設定
-                      child: Image.memory(
-                        decodeBase64ToBytes(disaster.images.first),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  if (disaster.images.isEmpty)
-                    SizedBox(
-                      width: imageWidth, // 画像の代わりにアイコンを表示
-                      height: imageHeight,
-                      child: Icon(Icons.image,
-                          size: imageHeight * 0.6), // アイコンサイズを調整
-                    ),
-
-                  // 右側に表示する情報
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // 災害名
-                        Text(
-                          disaster.name,
-                          style: TextStyle(
-                            fontSize: screenWidth * 0.025, // 画面幅の2.5%に設定
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(height: screenHeight * 0.015), // 間隔を少し広めに
-
-                        // 日時
-                        Text(
-                          '日時: ${disaster.datetime}',
-                          style: TextStyle(
-                              fontSize: screenWidth * 0.022), // フォントサイズを調整
-                        ),
-                        SizedBox(height: screenHeight * 0.015),
-
-                        // 重要度
-                        Row(
-                          children: [
-                            Text(
-                              '重要度: ',
-                              style: TextStyle(
-                                  fontSize: screenWidth * 0.022), // フォントサイズを調整
-                            ),
-                            RatingStars(
-                              value: disaster.importance.toDouble(),
-                              starCount: 10,
-                              maxValue: 10,
-                              starSize: screenWidth * 0.02, // スターのサイズを調整
-                              starSpacing: screenWidth * 0.01, // スターの間隔を調整
-                              valueLabelVisibility: false,
-                              starColor: Colors.pink,
-                              starOffColor: const Color(0xffe7e8ea),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: screenHeight * 0.015),
-
-                        // 近隣
-                        Text(
-                          '近隣: ${disaster.notsoaccuratelocation ?? '不明'}',
-                          style: TextStyle(fontSize: screenWidth * 0.022),
-                        ),
-                        SizedBox(height: screenHeight * 0.015),
-
-                        // 詳細情報
-                        if (disaster.description != null)
-                          Text(
-                            // disaster.description!,
-                            '詳細情報: ${disaster.description}',
-                            style: TextStyle(fontSize: screenWidth * 0.022),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              SizedBox(height: screenHeight * 0.02), // 余白を少し広めに調整
-
-              // 閉じるボタン
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(
-                    vertical: screenHeight * 0.015, // ボタンの縦サイズを調整
-                    horizontal: screenWidth * 0.05, // ボタンの横サイズを調整
-                  ),
-                  textStyle: TextStyle(
-                      fontSize: screenWidth * 0.022), // ボタンテキストのフォントサイズを調整
-                ),
-                child: const Text('閉じる'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _NextPageState extends State<NextPage> {
   int _selectedIndex = 0;
@@ -1499,7 +1362,7 @@ class _NextPageState extends State<NextPage> {
         ),
         Center(
           child: CustomPaint(
-            size: Size(30, 30), // Adjust the size of the crosshair
+            size: const Size(30, 30), // Adjust the size of the crosshair
             painter: CrosshairPainter(),
           ),
         ),
@@ -1555,7 +1418,7 @@ class _NextPageState extends State<NextPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('削除に失敗しました: ステータスコード ${response.statusCode}'),
-              duration: Duration(seconds: 1),
+              duration: const Duration(seconds: 1),
             ),
           );
         }
@@ -1687,6 +1550,7 @@ class _NextPageState extends State<NextPage> {
       'assets/images_examples/teddy_bear.jpg',
       'assets/images_examples/snow.jpg',
       'assets/images_examples/snow_husky.jpg',
+      'assets/images_examples/snow_husky_b.jpg',
     ];
 
     final imagesBase64 = <String, String>{};
@@ -1760,7 +1624,7 @@ class _NextPageState extends State<NextPage> {
           type: DisasterType.heavySnow,
           latitude: 43.529597509514225,
           longitude: 142.1754771492199,
-          images: [imagesBase64['snow_husky.jpg'] ?? '', imagesBase64['snow.jpg'] ?? ''],
+          images: [imagesBase64['snow_husky.jpg'] ?? '', imagesBase64['snow_husky_b.jpg'] ?? ''],
           description: '冷たい風が広がる雪原には、一面の白い世界が広がっていた。雪は細かく降り続け、空から舞い落ちる結晶がキラキラと光を反射している。その中を、一匹のハスキーが駆け抜けていた。黒と白の毛が混ざり合ったその体は、雪景色と完璧に調和し、まるで雪そのものが動き出したようだった。',
           isSampleData: true,
           importance: 1,
