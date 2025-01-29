@@ -455,7 +455,6 @@ Uint8List decodeBase64ToBytes(String base64Str) {
 // End of Helper functions
 // =================================================================================================
 
-
 class _NextPageState extends State<NextPage> {
   int _selectedIndex = 0;
   DisasterType? _selectedDisaster;
@@ -937,7 +936,8 @@ class _NextPageState extends State<NextPage> {
   final LatLng _initialCenter = const LatLng(38.0, 140.0);
   final double _initialZoom = 5.2;
   List<Marker> _markers = [];
-  List<Disaster> _disasterData = []; // fetched from the server or read from sample data
+  List<Disaster> _disasterData =
+      []; // fetched from the server or read from sample data
   // _originalDisasterData is used to store the original data, _removeDisasterthatIsNotInCameraView function
   // filters using this data to update _disasterData
   List<Disaster> _originalDisasterData = [];
@@ -1356,14 +1356,16 @@ class _NextPageState extends State<NextPage> {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 1.0),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12.0, vertical: 1.0),
                     decoration: BoxDecoration(
                       color: _getDisasterStatusColor(disaster.status),
                       borderRadius: BorderRadius.circular(2.0),
                     ),
                     child: Text(
                       _getDisasterStatusText(disaster.status),
-                      style: const TextStyle(color: Colors.white, fontSize: 12.0),
+                      style:
+                          const TextStyle(color: Colors.white, fontSize: 12.0),
                     ),
                   ),
                   const SizedBox(width: 8.0),
@@ -1550,40 +1552,34 @@ class _NextPageState extends State<NextPage> {
   Future<void> _swapDisasterStatus(BuildContext context, int index) async {
     final disaster = _disasterData[index];
 
-    // サンプルデータの場合はローカルだけ切り替え、サーバーにはリクエスト送信しない
+    // サンプルデータの場合はローカルだけで更新
     if (disaster.isSampleData) {
       _cycleLocalStatus(disaster);
       setState(() {
-        // 画面をリフレッシュ
         _disasterData[index] = disaster;
         _originalDisasterData = List.from(_disasterData);
         _updateMarkersFromDisasterData();
       });
 
-      // メッセージを表示
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('サンプルデータのステータスを切り替えました。'),
-            duration: Duration(seconds: 1),
-          ),
+          const SnackBar(content: Text('サンプルデータのステータスを切り替えました。')),
         );
       }
       return;
     }
 
-    // サンプルデータでない場合はサーバーにリクエストを送信してからステータス変更
     try {
-      final id = disaster.id; // Disasterクラスのidを利用
+      final id = disaster.id;
       final url = Uri.parse('http://localhost:8000/disaster/$id/swap_status');
-
-      // ここでは PUT や POST などでステータス切り替え用のリクエストを送る想定
-      // 実際のAPI設計に合わせてメソッドやボディなどを変更してください
       final response = await http.post(url);
 
       if (response.statusCode == 200) {
-        // サーバー側での更新が成功したら、ローカルデータも切り替え
-        _cycleLocalStatus(disaster);
+        final responseData = json.decode(response.body);
+        final newStatus = responseData["new_status"];
+
+        // 新しいステータスを適用
+        disaster.status = newStatus;
         setState(() {
           _disasterData[index] = disaster;
           _originalDisasterData = List.from(_disasterData);
@@ -1592,22 +1588,15 @@ class _NextPageState extends State<NextPage> {
 
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('ステータスを切り替えました。'),
-              duration: Duration(seconds: 1),
-            ),
+            SnackBar(content: Text('ステータスを ${newStatus} に変更しました。')),
           );
         }
       } else {
-        // ステータスコードが200でない場合はエラーとして扱う
         final body = json.decode(response.body);
         debugPrint("ステータス切り替え失敗: ${response.statusCode} => $body");
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('ステータス切り替えに失敗しました: ${response.statusCode}'),
-              duration: const Duration(seconds: 1),
-            ),
+            SnackBar(content: Text('ステータス切り替えに失敗しました: ${response.statusCode}')),
           );
         }
       }
@@ -1615,14 +1604,11 @@ class _NextPageState extends State<NextPage> {
       debugPrint("エラーが発生しました: $e");
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('エラーが発生しました: $e'),
-          ),
+          SnackBar(content: Text('エラーが発生しました: $e')),
         );
       }
     }
   }
-
 
   // Future<void> _archiveDisaster(int index) async {
   //   // 1. アーカイブ対象の災害情報を取得
@@ -1760,7 +1746,8 @@ class _NextPageState extends State<NextPage> {
           latitude: 35.6895,
           longitude: 139.6917,
           images: [imagesBase64['military_vehicle.jpg'] ?? ''],
-          description: '軍事車両が目撃されたぞ！遠くから、巨大な車両がゆっくりと進んでくる。その外見は、確かに映画やニュースで見る軍事車両そっくりだ。',
+          description:
+              '軍事車両が目撃されたぞ！遠くから、巨大な車両がゆっくりと進んでくる。その外見は、確かに映画やニュースで見る軍事車両そっくりだ。',
           isSampleData: true,
           importance: 9,
           datetime: DateTime.utc(2025, 1, 1, 12, 0),
@@ -1772,7 +1759,8 @@ class _NextPageState extends State<NextPage> {
           latitude: 34.6937,
           longitude: 135.5023,
           images: [imagesBase64['nuclear_waste.jpg'] ?? ''],
-          description: '静かな田園地帯に広がる小麦畑が金色に輝いていた。その中心には奇妙なものが転がっていた――錆びついた黄色い樽だ。村人たちはその樽を見つけてざわめき始めた。「放射性廃棄物が漏れているに違いない！」と、噂はあっという間に広がった。子どもたちは近寄らないように言われ、大人たちは慌てて専門家を呼び寄せた。',
+          description:
+              '静かな田園地帯に広がる小麦畑が金色に輝いていた。その中心には奇妙なものが転がっていた――錆びついた黄色い樽だ。村人たちはその樽を見つけてざわめき始めた。「放射性廃棄物が漏れているに違いない！」と、噂はあっという間に広がった。子どもたちは近寄らないように言われ、大人たちは慌てて専門家を呼び寄せた。',
           isSampleData: true,
           importance: 10,
           datetime: DateTime.utc(2025, 1, 2, 7, 13),
@@ -1784,7 +1772,8 @@ class _NextPageState extends State<NextPage> {
           latitude: 43.82013008282363,
           longitude: 143.85868562865505,
           images: [imagesBase64['teddy_bear.jpg'] ?? ''],
-          description: '🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻が出没しました。',
+          description:
+              '🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻が出没しました。',
           isSampleData: true,
           importance: 2,
           datetime: DateTime.utc(2025, 1, 3, 8, 0),
@@ -1796,7 +1785,8 @@ class _NextPageState extends State<NextPage> {
           latitude: 43.81444321853834,
           longitude: 143.90273362448957,
           images: [imagesBase64['teddy_bear.jpg'] ?? ''],
-          description: '熊が学校に入ったらしい！次々と子どもたちがパニックになりました。みんなは教室の隅に集まり、先生も急いで職員室に通報しました。',
+          description:
+              '熊が学校に入ったらしい！次々と子どもたちがパニックになりました。みんなは教室の隅に集まり、先生も急いで職員室に通報しました。',
           isSampleData: true,
           importance: 2,
           datetime: DateTime.utc(2025, 1, 4, 22, 0),
@@ -1808,7 +1798,8 @@ class _NextPageState extends State<NextPage> {
           latitude: 43.19764537767935,
           longitude: 141.75734214498215,
           images: [imagesBase64['snow.jpg'] ?? ''],
-          description: '冬の寒さが厳しく、雪が静かに降り積もる街。小さな犬は、いつものように国道のはずれの林を走り回って遊んでいました。しかし、その日は雪がいつもより深く、まるは夢中で跳ね回るうちに深い雪の中に足を取られ、身動きが取れなくなってしまいました。',
+          description:
+              '冬の寒さが厳しく、雪が静かに降り積もる街。小さな犬は、いつものように国道のはずれの林を走り回って遊んでいました。しかし、その日は雪がいつもより深く、まるは夢中で跳ね回るうちに深い雪の中に足を取られ、身動きが取れなくなってしまいました。',
           isSampleData: true,
           importance: 1,
           datetime: DateTime.utc(2025, 1, 5, 10, 0),
@@ -1819,8 +1810,12 @@ class _NextPageState extends State<NextPage> {
           type: DisasterType.heavySnow,
           latitude: 43.529597509514225,
           longitude: 142.1754771492199,
-          images: [imagesBase64['snow_husky.jpg'] ?? '', imagesBase64['snow_husky_b.jpg'] ?? ''],
-          description: '冷たい風が広がる雪原には、一面の白い世界が広がっていた。雪は細かく降り続け、空から舞い落ちる結晶がキラキラと光を反射している。その中を、一匹のハスキーが駆け抜けていた。黒と白の毛が混ざり合ったその体は、雪景色と完璧に調和し、まるで雪そのものが動き出したようだった。',
+          images: [
+            imagesBase64['snow_husky.jpg'] ?? '',
+            imagesBase64['snow_husky_b.jpg'] ?? ''
+          ],
+          description:
+              '冷たい風が広がる雪原には、一面の白い世界が広がっていた。雪は細かく降り続け、空から舞い落ちる結晶がキラキラと光を反射している。その中を、一匹のハスキーが駆け抜けていた。黒と白の毛が混ざり合ったその体は、雪景色と完璧に調和し、まるで雪そのものが動き出したようだった。',
           isSampleData: true,
           importance: 1,
           datetime: DateTime.utc(2025, 1, 1, 13, 0),
