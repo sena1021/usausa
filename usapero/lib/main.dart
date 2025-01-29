@@ -1523,7 +1523,7 @@ class _NextPageState extends State<NextPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('削除に失敗しました: ステータスコード ${response.statusCode}'),
-              duration: const Duration(seconds: 1),
+              duration: const Duration(seconds: 2),
             ),
           );
         }
@@ -1558,12 +1558,11 @@ class _NextPageState extends State<NextPage> {
       setState(() {
         _disasterData[index] = disaster;
         _originalDisasterData = List.from(_disasterData);
-        _updateMarkersFromDisasterData();
       });
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('サンプルデータのステータスを切り替えました。')),
+          const SnackBar(content: Text('サンプルデータのステータスを切り替えました。'), duration: Duration(seconds: 1)),
         );
       }
       return;
@@ -1583,12 +1582,11 @@ class _NextPageState extends State<NextPage> {
         setState(() {
           _disasterData[index] = disaster;
           _originalDisasterData = List.from(_disasterData);
-          _updateMarkersFromDisasterData();
         });
 
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('ステータスを ${newStatus} に変更しました。')),
+            SnackBar(content: Text('ステータスを $newStatus に変更しました。'), duration: const Duration(seconds: 1)),
           );
         }
       } else {
@@ -1596,7 +1594,7 @@ class _NextPageState extends State<NextPage> {
         debugPrint("ステータス切り替え失敗: ${response.statusCode} => $body");
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('ステータス切り替えに失敗しました: ${response.statusCode}')),
+            SnackBar(content: Text('ステータス切り替えに失敗しました: ${response.statusCode}'), duration: const Duration(seconds: 2)),
           );
         }
       }
