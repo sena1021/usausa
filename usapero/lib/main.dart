@@ -287,6 +287,7 @@ class Disaster {
   // Required datetime field
   DateTime datetime;
   // Required int status field
+  // 0: 未対応, 1: 対応中, 2: 対応済み, others: 不明
   int status;
 
   Disaster({
@@ -328,6 +329,18 @@ final Map<String, DisasterType> _disasterNameToTypeMap = {
 DisasterType getDisasterTypeFromName(String name) {
   // マッピングテーブルに無い場合は「その他」を返す
   return _disasterNameToTypeMap[name] ?? DisasterType.other;
+}
+
+enum DisasterStatus {
+  notHandled(0, '未対応'),
+  inProgress(1, '対応中'),
+  done(2, '対応済み'),
+  unknown(3, '不明'),
+  all(999, 'すべて'); // 便宜上 "すべて" や "フィルタなし" を入れておく
+
+  final int value;
+  final String label;
+  const DisasterStatus(this.value, this.label);
 }
 
 class CityData {
@@ -930,14 +943,23 @@ class _NextPageState extends State<NextPage> {
   List<Disaster> _originalDisasterData = [];
 
   DisasterTypeSort _currentDisasterSort = DisasterTypeSort.dateAsc;
+  // フィルタ用に保持する変数
   DisasterType? _currentDisasterFilter = DisasterType.all;
+  DisasterStatus _currentDisasterStatusFilter = DisasterStatus.all;
 
   void _filterAndSortDisasterData() {
+    // まず type によるフィルタ
     if (_currentDisasterFilter == DisasterType.all) {
       _disasterData = List.from(_originalDisasterData);
     } else {
       _disasterData = _originalDisasterData
           .where((d) => d.type == _currentDisasterFilter)
+          .toList();
+    }
+    // DisasterStatus.all でなければ status のフィルタをかける
+    if (_currentDisasterStatusFilter != DisasterStatus.all) {
+      _disasterData = _disasterData
+          .where((d) => d.status == _currentDisasterStatusFilter.value)
           .toList();
     }
     _sortDisasterData();
@@ -1123,7 +1145,7 @@ class _NextPageState extends State<NextPage> {
   }
 
   Widget _buildMapLeftPanel() {
-    // load data and load sample data does the following:
+    // The first 2 buttons load data and load sample data then does the following:
     // _disasterData = loadedData from defined samples or from the server
     // _originalDisasterData = List.from(_disasterData);
     // _getnotsoaccurateLocationbyReadingCSV();
@@ -1202,6 +1224,27 @@ class _NextPageState extends State<NextPage> {
                   );
                 }),
               ];
+            },
+          ),
+          const SizedBox(height: 8),
+          // status フィルタボタン
+          PopupMenuButton<DisasterStatus>(
+            icon: const Icon(Icons.filter_2_outlined, size: 32),
+            tooltip: 'ステータスフィルター',
+            onSelected: (DisasterStatus selectedStatus) {
+              setState(() {
+                _currentDisasterStatusFilter = selectedStatus;
+                _filterAndSortDisasterData();
+                _updateMarkersFromDisasterData();
+              });
+            },
+            itemBuilder: (BuildContext context) {
+              return DisasterStatus.values.map((status) {
+                return PopupMenuItem<DisasterStatus>(
+                  value: status,
+                  child: Text(status.label),
+                );
+              }).toList();
             },
           ),
         ],
