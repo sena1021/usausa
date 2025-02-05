@@ -278,6 +278,7 @@ class Disaster {
   // ざっくりした所在地を表すフィールド
   String? notsoaccuratelocation;
   String? description;
+  String? comment;
   List<String> images = [];
   int? id; // Optional id field
   // Optional isSampleData field
@@ -299,6 +300,7 @@ class Disaster {
     required this.datetime,
     required this.status,
     this.description,
+    this.comment,
     this.notsoaccuratelocation,
     this.images = const [],
     this.id, // Optional id in the constructor
@@ -1445,6 +1447,16 @@ class _NextPageState extends State<NextPage> {
             _swapDisasterStatus(context, index);
           },
         ),
+        // comment button
+        IconButton(
+          icon: const Icon(Icons.comment),
+          onPressed: () {
+            // show a dialog to add a comment
+            // send the comment to the server of a specific disaster
+            // currently send to localhost:8000/disaster/$id/comment
+            _addComment(context, index);
+          },
+        ),
       ],
     );
   }
@@ -1472,6 +1484,155 @@ class _NextPageState extends State<NextPage> {
           ),
         ),
       ],
+    );
+  }
+
+  /// コメントを追加・編集する
+  Future<void> _addComment(BuildContext context, int index) async {
+    final disaster = _disasterData[index];
+
+    // サンプルデータの場合はサーバーに送らずローカルだけで更新
+    if (disaster.isSampleData) {
+      await showDialog(
+        context: context,
+        builder: (dialogContext) {
+          // テキスト入力用コントローラ
+          final TextEditingController commentController = TextEditingController(
+            text: disaster.comment ?? '',
+          );
+
+          return AlertDialog(
+            title: const Text('コメント入力'),
+            content: TextField(
+              controller: commentController,
+              maxLines: 10,
+              decoration: const InputDecoration(
+                hintText: 'コメントを入力してください',
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('キャンセル'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                  setState(() {
+                    disaster.comment = commentController.text;
+                    _disasterData[index] = disaster;
+                    _originalDisasterData = List.from(_disasterData);
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('サンプルデータにコメントを追加しました。'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                },
+                child: const Text('保存'),
+              ),
+            ],
+          );
+        },
+      );
+      return;
+    }
+
+    // 実際のサーバーに送信する場合
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        final TextEditingController commentController = TextEditingController(
+          text: disaster.comment ?? '',
+        );
+
+        return AlertDialog(
+          title: const Text('コメント入力'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: commentController,
+                maxLines: 10,
+                decoration: const InputDecoration(
+                  hintText: 'コメントを入力してください',
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('キャンセル'),
+            ),
+            TextButton(
+              onPressed: () async {
+                // ダイアログを閉じる
+                Navigator.of(dialogContext).pop();
+
+                // コメントを POST する
+                try {
+                  final id = disaster.id;
+                  final url = Uri.parse('http://localhost:8000/disaster/$id/comment');
+
+                  // body は適宜 JSON 形式やフォーム形式などに合わせて実装
+                  // ここでは単純に JSON で送る例を想定
+                  final response = await http.post(
+                    url,
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: json.encode({
+                      'comment': commentController.text,
+                    }),
+                  );
+
+                  if (response.statusCode == 200) {
+                    // 成功時: ローカルにも反映させる
+                    setState(() {
+                      disaster.comment = commentController.text;
+                      _disasterData[index] = disaster;
+                      _originalDisasterData = List.from(_disasterData);
+                    });
+
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('コメントを保存しました。'),
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
+                    }
+                  } else {
+                    final body = json.decode(response.body);
+                    debugPrint("コメント保存失敗: ${response.statusCode} => $body");
+
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('コメントの保存に失敗しました: ${response.statusCode}'),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  }
+                } catch (e) {
+                  debugPrint("コメント保存中にエラーが発生しました: $e");
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('エラーが発生しました: $e'),
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('保存'),
+            ),
+          ],
+        );
+      },
     );
   }
 
