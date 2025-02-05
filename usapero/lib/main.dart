@@ -1174,7 +1174,7 @@ class _NextPageState extends State<NextPage> {
           // sort option
           PopupMenuButton<DisasterTypeSort>(
             icon: const Icon(Icons.sort_outlined, size: 32),
-            tooltip: 'ソートオプション',
+            tooltip: '並び替えオプション',
             onSelected: (DisasterTypeSort selectedSort) {
               setState(() {
                 _currentDisasterSort = selectedSort;
@@ -1206,7 +1206,7 @@ class _NextPageState extends State<NextPage> {
           // quick filter
           PopupMenuButton<DisasterType?>(
             icon: const Icon(Icons.filter_1_outlined, size: 32),
-            tooltip: 'クイックフィルター',
+            tooltip: '災害フィルター',
             onSelected: (DisasterType? selectedType) {
               setState(() {
                 _currentDisasterFilter = selectedType;
@@ -1230,7 +1230,7 @@ class _NextPageState extends State<NextPage> {
           // status フィルタボタン
           PopupMenuButton<DisasterStatus>(
             icon: const Icon(Icons.filter_2_outlined, size: 32),
-            tooltip: 'ステータスフィルター',
+            tooltip: '処理状態フィルター',
             onSelected: (DisasterStatus selectedStatus) {
               setState(() {
                 _currentDisasterStatusFilter = selectedStatus;
@@ -1427,7 +1427,7 @@ class _NextPageState extends State<NextPage> {
         ),
         IconButton(
           icon: const Icon(Icons.delete),
-          onPressed: () => _deleteDisaster(context, index),
+          onPressed: () => _confirmDelete(context, index),
         ),
         IconButton(
           icon: const Icon(Icons.archive),
@@ -1472,6 +1472,36 @@ class _NextPageState extends State<NextPage> {
           ),
         ),
       ],
+    );
+  }
+
+  void _confirmDelete(BuildContext context, int index) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text("削除確認"),
+          content: const Text("本当に削除しますか？"),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text("キャンセル"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                _deleteDisaster(context, index);
+              },
+              child: const Text(
+                "削除",
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
