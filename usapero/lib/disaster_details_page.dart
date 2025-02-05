@@ -202,6 +202,16 @@ class _DisasterDetailsPageState extends State<DisasterDetailsPage> {
             '詳細情報: ${_disaster.description}',
             style: TextStyle(fontSize: screenWidth * 0.022),
           ),
+        SizedBox(height: screenHeight * 0.015),
+        
+        /// optional disaster.comment
+        /// コメントがある場合のみ表示
+        if (_disaster.comment != null)
+          Text(
+            'コメント: ${_disaster.comment}',
+            style: TextStyle(fontSize: screenWidth * 0.022),
+          ),
+
       ],
     );
   }
