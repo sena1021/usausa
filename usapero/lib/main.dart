@@ -1854,6 +1854,7 @@ class _NextPageState extends State<NextPage> {
           final List<String> images =
               imagesDynamic.map((img) => img?.toString() ?? "").toList();
           final String description = report["description"] ?? "";
+          final String comment = report["comment"] ?? "";
           final int id = report["report_id"] ?? "";
           final int importance = report["importance"] ?? 0;
 
@@ -1877,6 +1878,7 @@ class _NextPageState extends State<NextPage> {
             longitude: longitude,
             images: images,
             description: description,
+            comment: comment,
             id: id,
             importance: importance,
             datetime: datetime,
@@ -1937,6 +1939,7 @@ class _NextPageState extends State<NextPage> {
           images: [imagesBase64['military_vehicle.jpg'] ?? ''],
           description:
               '軍事車両が目撃されたぞ！遠くから、巨大な車両がゆっくりと進んでくる。その外見は、確かに映画やニュースで見る軍事車両そっくりだ。',
+          comment: 'もっと情報が欲しいです。',
           isSampleData: true,
           importance: 9,
           datetime: DateTime.utc(2025, 1, 1, 12, 0),

@@ -209,7 +209,10 @@ class _DisasterDetailsPageState extends State<DisasterDetailsPage> {
         if (_disaster.comment != null)
           Text(
             'コメント: ${_disaster.comment}',
-            style: TextStyle(fontSize: screenWidth * 0.022),
+            style: TextStyle(
+              fontSize: screenWidth * 0.022,
+              color: Colors.deepPurple,
+            ),
           ),
 
       ],
