@@ -1161,7 +1161,9 @@ class _NextPageState extends State<NextPage> {
             message: 'データを取得',
             child: IconButton(
               icon: const Icon(Icons.cloud_download, size: 32),
-              onPressed: _loadDisasterData,
+              onPressed: () async {
+                await _loadDisasterData(context);
+              },
             ),
           ),
           const SizedBox(height: 8),
@@ -1829,7 +1831,7 @@ class _NextPageState extends State<NextPage> {
   //   }
   // }
 
-  Future<void> _loadDisasterData() async {
+  Future<void> _loadDisasterData(BuildContext context) async {
     try {
       // FastAPIの /disaster エンドポイントにGETリクエストを送信
       final response =
@@ -1895,15 +1897,38 @@ class _NextPageState extends State<NextPage> {
           _updateMarkersFromDisasterData();
           _sortDisasterData();
         });
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('データを取得しました。'),
+              duration: Duration(seconds: 1),
+            ),
+          );
+        }
+
       } else {
         if (kDebugMode) {
           debugPrint("データ取得に失敗しました: ${response.statusCode}");
           debugPrint("レスポンス内容: ${response.body}");
         }
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('データ取得に失敗しました: ${response.statusCode}'),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
       }
     } catch (e) {
       if (kDebugMode) {
         debugPrint("エラーが発生しました: $e");
+      }
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('エラーが発生しました: $e'), duration: const Duration(seconds: 3),),
+        );
       }
     }
   }
@@ -2025,7 +2050,6 @@ class _NextPageState extends State<NextPage> {
   Widget _buildPageContent() {
     switch (_selectedIndex) {
       case 0:
-        // 災害情報報告用フォームを返す
         return _buildReportForm();
       case 1:
         return _buildMap();
