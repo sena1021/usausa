@@ -74,7 +74,17 @@ flutter:
     - assets/images_examples/snow.jpg
     - assets/images_examples/snow_husky.jpg
     - assets/images_examples/snow_husky_b.jpg
+    - assets/images_examples/tsunami.jpg
+    - assets/images_examples/fire.jpg
     - assets/citylldata.csv
+    - assets/disaster_icons/snow.png
+    - assets/disaster_icons/default.png
+    - assets/disaster_icons/bearassault.png
+    - assets/disaster_icons/typhoon.png
+    - assets/disaster_icons/volcanic_eruption.png
+    - assets/disaster_icons/fire.png
+    - assets/disaster_icons/earthquake.png
+    - assets/disaster_icons/tsunami.png
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

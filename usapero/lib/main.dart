@@ -1028,10 +1028,36 @@ class _NextPageState extends State<NextPage> {
           width: 80,
           height: 80,
           // ここでは簡易的に FlutterLogo を表示
-          child: const FlutterLogo(),
+          child: Image.asset(
+            _getDisasterIconImage(disaster.name),
+            width: 80,
+            height: 80,
+            fit: BoxFit.cover,
+          ),
         );
       }).toList();
     });
+  }
+
+  String _getDisasterIconImage(String name) {
+    switch (name.toLowerCase()) {
+      case '大雪':
+        return 'assets/disaster_icons/snow.png';
+      case '熊襲撃':
+        return 'assets/disaster_icons/bearassault.png';
+      case '台風':
+        return 'assets/disaster_icons/typhoon.png';
+      case '火山噴火':
+        return 'assets/disaster_icons/volcanic_eruption.png';
+      case '火災':
+        return 'assets/disaster_icons/fire.png';
+      case '地震':
+        return 'assets/disaster_icons/earthquake.png';
+      case '津波':
+        return 'assets/disaster_icons/tsunami.png';
+      default:
+        return 'assets/disaster_icons/default.png'; // Fallback image
+    }
   }
 
   Future<void> _getnotsoaccurateLocationbyReadingCSV() async {
@@ -1938,6 +1964,8 @@ class _NextPageState extends State<NextPage> {
   Future<void> _loadSampleData() async {
     final assetPaths = [
       'assets/images_examples/military_vehicle.jpg',
+      'assets/images_examples/tsunami.jpg',
+      'assets/images_examples/fire.jpg',
       'assets/images_examples/nuclear_waste.jpg',
       'assets/images_examples/teddy_bear.jpg',
       'assets/images_examples/snow.jpg',
@@ -1956,32 +1984,33 @@ class _NextPageState extends State<NextPage> {
 
     setState(() {
       _disasterData = [
+        // tsunami in tokyo
         Disaster(
-          name: '軍事攻撃',
-          type: DisasterType.militaryattack,
+          name: '津波',
+          type: DisasterType.tsunami,
           latitude: 35.6895,
           longitude: 139.6917,
-          images: [imagesBase64['military_vehicle.jpg'] ?? ''],
+          images: [imagesBase64['tsunami.jpg'] ?? ''],
           description:
-              '軍事車両が目撃されたぞ！遠くから、巨大な車両がゆっくりと進んでくる。その外見は、確かに映画やニュースで見る軍事車両そっくりだ。',
-          comment: 'もっと情報が欲しいです。',
-          isSampleData: true,
-          importance: 9,
-          datetime: DateTime.utc(2025, 1, 1, 12, 0),
-          status: 2,
-        ),
-        Disaster(
-          name: '核汚染',
-          type: DisasterType.nuclearcontamination,
-          latitude: 34.6937,
-          longitude: 135.5023,
-          images: [imagesBase64['nuclear_waste.jpg'] ?? ''],
-          description:
-              '静かな田園地帯に広がる小麦畑が金色に輝いていた。その中心には奇妙なものが転がっていた――錆びついた黄色い樽だ。村人たちはその樽を見つけてざわめき始めた。「放射性廃棄物が漏れているに違いない！」と、噂はあっという間に広がった。子どもたちは近寄らないように言われ、大人たちは慌てて専門家を呼び寄せた。',
+              '東京湾に巨大な津波が押し寄せている！高さは数十メートルにも及び、その勢いは街を飲み込んでいく。人々は逃げ惑い、車は水に飲み込まれていく。',
           isSampleData: true,
           importance: 10,
-          datetime: DateTime.utc(2025, 1, 2, 7, 13),
-          status: 0,
+          datetime: DateTime.utc(2025, 1, 1, 15, 0),
+          status: 2,
+        ),
+        // fire in osaka
+        Disaster(
+          name: '火災',
+          type: DisasterType.fire,
+          latitude: 34.6937,
+          longitude: 135.5023,
+          images: [imagesBase64['fire.jpg'] ?? ''],
+          description:
+              '大阪の繁華街で火災が発生しました。火は瞬く間に広がり、周囲のビルにも延焼していきます。消防隊は駆けつけ、消火活動を行っています。',
+          isSampleData: true,
+          importance: 7,
+          datetime: DateTime.utc(2025, 1, 2, 12, 0),
+          status: 1,
         ),
         Disaster(
           name: '熊襲撃',
