@@ -1401,10 +1401,10 @@ class _NextPageState extends State<NextPage> {
                   const Text('重要度: '),
                   RatingStars(
                     value: disaster.importance.toDouble(),
-                    starCount: 10,
-                    maxValue: 10,
+                    starCount: 5,
+                    maxValue: 5,
                     starSize: 20,
-                    starSpacing: 2,
+                    starSpacing: 3,
                     valueLabelVisibility: false,
                     starColor: Colors.pink,
                     starOffColor: const Color(0xffe7e8ea),
@@ -1988,7 +1988,7 @@ class _NextPageState extends State<NextPage> {
           description:
               '東京湾に巨大な津波が押し寄せている！高さは数十メートルにも及び、その勢いは街を飲み込んでいく。人々は逃げ惑い、車は水に飲み込まれていく。',
           isSampleData: true,
-          importance: 10,
+          importance: 5,
           datetime: DateTime.utc(2025, 1, 1, 15, 0),
           status: 2,
         ),
@@ -2002,7 +2002,7 @@ class _NextPageState extends State<NextPage> {
           description:
               '大阪の繁華街で火災が発生しました。火は瞬く間に広がり、周囲のビルにも延焼していきます。消防隊は駆けつけ、消火活動を行っています。',
           isSampleData: true,
-          importance: 7,
+          importance: 4,
           datetime: DateTime.utc(2025, 1, 2, 12, 0),
           status: 1,
         ),
@@ -2015,9 +2015,9 @@ class _NextPageState extends State<NextPage> {
           description:
               '🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻🐻が出没しました。',
           isSampleData: true,
-          importance: 2,
+          importance: 1,
           datetime: DateTime.utc(2025, 1, 3, 8, 0),
-          status: 1,
+          status: 0,
         ),
         Disaster(
           name: '熊襲撃',
@@ -2028,7 +2028,7 @@ class _NextPageState extends State<NextPage> {
           description:
               '熊が学校に入ったらしい！次々と子どもたちがパニックになりました。みんなは教室の隅に集まり、先生も急いで職員室に通報しました。',
           isSampleData: true,
-          importance: 2,
+          importance: 1,
           datetime: DateTime.utc(2025, 1, 4, 22, 0),
           status: 1,
         ),

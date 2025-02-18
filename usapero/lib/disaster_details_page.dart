@@ -166,8 +166,8 @@ class _DisasterDetailsPageState extends State<DisasterDetailsPage> {
             ),
             RatingStars(
               value: _disaster.importance.toDouble(),
-              starCount: 10,
-              maxValue: 10,
+              starCount: 5,
+              maxValue: 5,
               starSize: screenWidth * 0.02,
               starSpacing: screenWidth * 0.01,
               valueLabelVisibility: false,
