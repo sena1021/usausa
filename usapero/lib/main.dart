@@ -245,10 +245,7 @@ enum DisasterType {
   heavyRain('豪雨'),
   heavySnow('大雪'),
   volcanicEruption('火山噴火'),
-  humanerror('人為事故'),
   bearassault('熊襲撃'),
-  militaryattack('軍事攻撃'),
-  nuclearcontamination('核汚染'),
   other('その他'),
   all('すべて');
 
@@ -322,10 +319,7 @@ final Map<String, DisasterType> _disasterNameToTypeMap = {
   '豪雨': DisasterType.heavyRain,
   '大雪': DisasterType.heavySnow,
   '火山噴火': DisasterType.volcanicEruption,
-  '人為事故': DisasterType.humanerror,
   '熊襲撃': DisasterType.bearassault,
-  '軍事攻撃': DisasterType.militaryattack,
-  '核汚染': DisasterType.nuclearcontamination,
 };
 
 DisasterType getDisasterTypeFromName(String name) {
@@ -645,8 +639,8 @@ class _NextPageState extends State<NextPage> {
                 child: Slider(
                   value: _importance.toDouble(),
                   min: 1,
-                  max: 10,
-                  divisions: 9,
+                  max: 5,
+                  divisions: 4,
                   label: _importance.toString(),
                   onChanged: (double value) {
                     setState(() {
@@ -1459,12 +1453,12 @@ class _NextPageState extends State<NextPage> {
           icon: const Icon(Icons.delete),
           onPressed: () => _confirmDelete(context, index),
         ),
-        IconButton(
-          icon: const Icon(Icons.archive),
-          onPressed: () {
-            // アーカイブ処理
-          },
-        ),
+        // IconButton(
+        //   icon: const Icon(Icons.archive),
+        //   onPressed: () {
+        //     // アーカイブ処理
+        //   },
+        // ),
         // button swap status
         IconButton(
           icon: const Icon(Icons.swap_horizontal_circle),
