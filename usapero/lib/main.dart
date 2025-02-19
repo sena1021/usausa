@@ -1358,6 +1358,13 @@ class _NextPageState extends State<NextPage> {
   // }
 
   Widget _buildMapRightDisasterList() {
+    if (_isLoadingDisasterFromServer) {
+      return const Expanded(
+        child: Center(
+          child: CircularProgressIndicator(), 
+        ),
+      );
+    }
     return Expanded(
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -1852,7 +1859,12 @@ class _NextPageState extends State<NextPage> {
   //   }
   // }
 
+  bool _isLoadingDisasterFromServer = false;
+
   Future<void> _loadDisasterData(BuildContext context) async {
+    setState(() {
+      _isLoadingDisasterFromServer = true; // データ取得開始前
+    });
     try {
       // FastAPIの /disaster エンドポイントにGETリクエストを送信
       final response =
@@ -1951,6 +1963,10 @@ class _NextPageState extends State<NextPage> {
           SnackBar(content: Text('エラーが発生しました: $e'), duration: const Duration(seconds: 3),),
         );
       }
+    } finally {
+      setState(() {
+        _isLoadingDisasterFromServer = false; // データ取得完了
+      });
     }
   }
 
