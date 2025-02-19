@@ -1177,24 +1177,25 @@ class _NextPageState extends State<NextPage> {
       padding: const EdgeInsets.symmetric(horizontal: 4.0),
       child: Column(
         children: [
-          Tooltip(
-            message: 'データを取得',
-            child: IconButton(
-              icon: const Icon(Icons.cloud_download, size: 32),
-              onPressed: () async {
-                await _loadDisasterData(context);
-              },
-            ),
-          ),
-          const SizedBox(height: 8),
-          Tooltip(
-            message: 'サンプルデータ',
-            child: IconButton(
-              icon: const Icon(Icons.chair, size: 32),
-              onPressed: _loadSampleData,
-            ),
-          ),
-          const SizedBox(height: 8),
+          // 20250219: Remove get disaster and load sample data buttons
+          // Tooltip(
+          //   message: 'データを取得',
+          //   child: IconButton(
+          //     icon: const Icon(Icons.cloud_download, size: 32),
+          //     onPressed: () async {
+          //       await _loadDisasterData(context);
+          //     },
+          //   ),
+          // ),
+          // const SizedBox(height: 8),
+          // Tooltip(
+          //   message: 'サンプルデータ',
+          //   child: IconButton(
+          //     icon: const Icon(Icons.chair, size: 32),
+          //     onPressed: _loadSampleData,
+          //   ),
+          // ),
+          // const SizedBox(height: 8),
           // sort option
           PopupMenuButton<DisasterTypeSort>(
             icon: const Icon(Icons.sort_outlined, size: 32),
@@ -2116,6 +2117,8 @@ class _NextPageState extends State<NextPage> {
             _disasterData = [];
             _originalDisasterData = [];
             _currentDisasterFilter = DisasterType.all;
+            // 20250219: auto load disaster data
+            _loadDisasterData(context);
           }
         },
         destinations: const [
