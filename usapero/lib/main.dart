@@ -2112,7 +2112,7 @@ class _NextPageState extends State<NextPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('FBDR - Federal Bureau of Disaster Response'),
+        title: const Text('災害情報'),
       ),
       body: _buildPageContent(),
       bottomNavigationBar: NavigationBar(
