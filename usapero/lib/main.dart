@@ -233,6 +233,7 @@ class _LoginScreenState extends State<LoginScreen> {
 }
 
 enum DisasterType {
+  all('すべて'),
   fire('火災'),
   forestFire('山火事'),
   earthquake('地震'),
@@ -246,8 +247,7 @@ enum DisasterType {
   heavySnow('大雪'),
   volcanicEruption('火山噴火'),
   bearassault('熊襲撃'),
-  other('その他'),
-  all('すべて');
+  other('その他');
 
   final String label;
   const DisasterType(this.label);
@@ -328,11 +328,11 @@ DisasterType getDisasterTypeFromName(String name) {
 }
 
 enum DisasterStatus {
+  all(999, 'すべて'), // 便宜上 "すべて" や "フィルタなし" を入れておく
   notHandled(0, '未対応'),
   inProgress(1, '対応中'),
   done(2, '対応済み'),
-  unknown(3, '不明'),
-  all(999, 'すべて'); // 便宜上 "すべて" や "フィルタなし" を入れておく
+  unknown(3, '不明');
 
   final int value;
   final String label;
@@ -1361,7 +1361,7 @@ class _NextPageState extends State<NextPage> {
     if (_isLoadingDisasterFromServer) {
       return const Expanded(
         child: Center(
-          child: CircularProgressIndicator(), 
+          child: CircularProgressIndicator(),
         ),
       );
     }
@@ -1604,7 +1604,8 @@ class _NextPageState extends State<NextPage> {
                 // コメントを POST する
                 try {
                   final id = disaster.id;
-                  final url = Uri.parse('http://localhost:8000/disaster/$id/comment');
+                  final url =
+                      Uri.parse('http://localhost:8000/disaster/$id/comment');
 
                   // body は適宜 JSON 形式やフォーム形式などに合わせて実装
                   // ここでは単純に JSON で送る例を想定
@@ -1641,7 +1642,8 @@ class _NextPageState extends State<NextPage> {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('コメントの保存に失敗しました: ${response.statusCode}'),
+                          content:
+                              Text('コメントの保存に失敗しました: ${response.statusCode}'),
                           duration: const Duration(seconds: 2),
                         ),
                       );
@@ -1783,7 +1785,9 @@ class _NextPageState extends State<NextPage> {
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('サンプルデータのステータスを切り替えました。'), duration: Duration(seconds: 1)),
+          const SnackBar(
+              content: Text('サンプルデータのステータスを切り替えました。'),
+              duration: Duration(seconds: 1)),
         );
       }
       return;
@@ -1807,7 +1811,9 @@ class _NextPageState extends State<NextPage> {
 
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('ステータスを $newStatus に変更しました。'), duration: const Duration(seconds: 1)),
+            SnackBar(
+                content: Text('ステータスを $newStatus に変更しました。'),
+                duration: const Duration(seconds: 1)),
           );
         }
       } else {
@@ -1815,7 +1821,9 @@ class _NextPageState extends State<NextPage> {
         debugPrint("ステータス切り替え失敗: ${response.statusCode} => $body");
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('ステータス切り替えに失敗しました: ${response.statusCode}'), duration: const Duration(seconds: 2)),
+            SnackBar(
+                content: Text('ステータス切り替えに失敗しました: ${response.statusCode}'),
+                duration: const Duration(seconds: 2)),
           );
         }
       }
@@ -1939,7 +1947,6 @@ class _NextPageState extends State<NextPage> {
             ),
           );
         }
-
       } else {
         if (kDebugMode) {
           debugPrint("データ取得に失敗しました: ${response.statusCode}");
@@ -1960,7 +1967,10 @@ class _NextPageState extends State<NextPage> {
       }
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('エラーが発生しました: $e'), duration: const Duration(seconds: 3),),
+          SnackBar(
+            content: Text('エラーが発生しました: $e'),
+            duration: const Duration(seconds: 3),
+          ),
         );
       }
     } finally {
