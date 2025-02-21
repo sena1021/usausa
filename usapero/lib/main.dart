@@ -2124,6 +2124,7 @@ class _NextPageState extends State<NextPage> {
             _latitudeController.text = '';
             _longitudeController.text = '';
             _disasterSubmitResponseMessage = '';
+            _getCurrentLocation();
           } else if (index == 1) {
             // ここで地図の初期表示位置を設定
             WidgetsBinding.instance.addPostFrameCallback((_) {
